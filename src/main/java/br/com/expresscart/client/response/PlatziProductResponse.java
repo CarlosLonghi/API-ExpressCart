@@ -2,13 +2,13 @@ package br.com.expresscart.client.response;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.List;
 
 public record PlatziProductResponse(
         Long id,
         String title,
         BigDecimal price,
-        ArrayList<String> images,
+        List<String> images,
         PlatziCategoryResponse category
 ) implements Serializable {
 }
