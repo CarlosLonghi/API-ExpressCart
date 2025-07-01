@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Document(collation = "cart")
+@Document(collection = "carts")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +16,7 @@ public class Cart {
 
     private String id;
 
-    private Long client;
+    private Long clientId;
 
     @Setter(AccessLevel.NONE)
     private BigDecimal totalPrice;
