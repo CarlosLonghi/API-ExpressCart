@@ -55,4 +55,9 @@ public class CartService {
 
         return cartRepository.save(cart);
     }
+
+    public Cart findCartById(String id) {
+        return cartRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Carrinho não encontrado"));
+    }
 }
