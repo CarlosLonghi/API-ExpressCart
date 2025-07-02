@@ -60,4 +60,32 @@ public class CartService {
         return cartRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carrinho não encontrado"));
     }
+
+    public Cart updateCart(String id, CartRequest cartRequest) {
+        Cart savedCart = findCartById(id);
+
+        List<Product> products = new ArrayList<>();
+        cartRequest.products().forEach(productRequest -> {
+            Optional<PlatziProductResponse> optionalPlatziProductResponse = productService.getProductById(productRequest.id());
+
+            // TODO: Add early error return
+            //if (optionalPlatziProductResponse.isEmpty()) return;
+
+            PlatziProductResponse platziProductResponse = optionalPlatziProductResponse.get();
+
+            products.add(Product.builder()
+                    .id(platziProductResponse.id())
+                    .title(platziProductResponse.title())
+                    .price(platziProductResponse.price())
+                    .quantity(productRequest.quantity())
+                    .build()
+            );
+        });
+
+        savedCart.setProducts(products);
+
+        savedCart.calculateTotalPrice();
+
+        return cartRepository.save(savedCart);
+    }
 }
