@@ -7,11 +7,12 @@ import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
 import br.com.expresscart.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,21 +22,15 @@ public class CartService {
     private final ProductService productService;
 
     public Cart createCart(CartRequest cartRequest) {
-
         cartRepository.findByClientIdAndStatus(cartRequest.clientId(), Status.OPEN)
                 .ifPresent(cart -> {
                     throw new IllegalArgumentException("Já existe um carrinho aberto para esse cliente");
                 });
 
-        List<Product> products = new ArrayList<>();
-
-        cartRequest.products().forEach(productRequest -> {
-            Optional<PlatziProductResponse> optionalPlatziProductResponse = productService.getProductById(productRequest.id());
-
-            // TODO: Add early error return
-            //if (optionalPlatziProductResponse.isEmpty()) return;
-
-            PlatziProductResponse platziProductResponse = optionalPlatziProductResponse.get();
+        List<Product> products = new ArrayList<>(cartRequest.products().size());
+        for (var productRequest : cartRequest.products()) {
+            PlatziProductResponse platziProductResponse = productService.getProductById(productRequest.id())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             products.add(Product.builder()
                     .id(platziProductResponse.id())
@@ -44,7 +39,7 @@ public class CartService {
                     .quantity(productRequest.quantity())
                     .build()
             );
-        });
+        }
 
         Cart cart = Cart.builder()
                 .clientId(cartRequest.clientId())
@@ -64,14 +59,10 @@ public class CartService {
     public Cart updateCart(String id, CartRequest cartRequest) {
         Cart savedCart = findCartById(id);
 
-        List<Product> products = new ArrayList<>();
-        cartRequest.products().forEach(productRequest -> {
-            Optional<PlatziProductResponse> optionalPlatziProductResponse = productService.getProductById(productRequest.id());
-
-            // TODO: Add early error return
-            //if (optionalPlatziProductResponse.isEmpty()) return;
-
-            PlatziProductResponse platziProductResponse = optionalPlatziProductResponse.get();
+        List<Product> products = new ArrayList<>(cartRequest.products().size());
+        for (var productRequest : cartRequest.products()) {
+            PlatziProductResponse platziProductResponse = productService.getProductById(productRequest.id())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             products.add(Product.builder()
                     .id(platziProductResponse.id())
@@ -80,10 +71,9 @@ public class CartService {
                     .quantity(productRequest.quantity())
                     .build()
             );
-        });
+        }
 
         savedCart.setProducts(products);
-
         savedCart.calculateTotalPrice();
 
         return cartRepository.save(savedCart);
