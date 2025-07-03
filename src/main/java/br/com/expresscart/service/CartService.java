@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -60,6 +62,20 @@ public class CartService {
 
         savedCart.setPaymentMethod(paymentRequest.paymentMethod());
         savedCart.setStatus(Status.SOLD);
+
+        return cartRepository.save(savedCart);
+    }
+
+    public Cart clearCart(String cartId) {
+        Cart savedCart = findCartById(cartId);
+
+        if (savedCart.getStatus().equals(Status.SOLD)) {
+            throw new IllegalArgumentException("Não é possivel limpar os produtos de um carrinho já vendido");
+        }
+
+        List<Product> emptyProductList = new ArrayList<>();
+        savedCart.setProducts(emptyProductList);
+        savedCart.calculateTotalPrice();
 
         return cartRepository.save(savedCart);
     }
