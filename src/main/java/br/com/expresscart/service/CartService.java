@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,23 +26,11 @@ public class CartService {
                     throw new IllegalArgumentException("Já existe um carrinho aberto para esse cliente");
                 });
 
-        List<Product> products = new ArrayList<>(cartRequest.products().size());
-        for (var productRequest : cartRequest.products()) {
-            PlatziProductResponse platziProductResponse = productService.getProductById(productRequest.id())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-            products.add(Product.builder()
-                    .id(platziProductResponse.id())
-                    .title(platziProductResponse.title())
-                    .price(platziProductResponse.price())
-                    .quantity(productRequest.quantity())
-                    .build()
-            );
-        }
+        List<Product> productList = buildProductListFromRequest(cartRequest);
 
         Cart cart = Cart.builder()
                 .clientId(cartRequest.clientId())
-                .products(products)
+                .products(productList)
                 .status(Status.OPEN)
                 .build();
         cart.calculateTotalPrice();
@@ -59,23 +46,25 @@ public class CartService {
     public Cart updateCart(String id, CartRequest cartRequest) {
         Cart savedCart = findCartById(id);
 
-        List<Product> products = new ArrayList<>(cartRequest.products().size());
-        for (var productRequest : cartRequest.products()) {
-            PlatziProductResponse platziProductResponse = productService.getProductById(productRequest.id())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        List<Product> productList = buildProductListFromRequest(cartRequest);
 
-            products.add(Product.builder()
-                    .id(platziProductResponse.id())
-                    .title(platziProductResponse.title())
-                    .price(platziProductResponse.price())
-                    .quantity(productRequest.quantity())
-                    .build()
-            );
-        }
-
-        savedCart.setProducts(products);
+        savedCart.setProducts(productList);
         savedCart.calculateTotalPrice();
 
         return cartRepository.save(savedCart);
+    }
+
+    private List<Product> buildProductListFromRequest(CartRequest cartRequest) {
+        return cartRequest.products().stream()
+                .map(productRequest -> {
+                    PlatziProductResponse productResponse = productService.getProductById(productRequest.id())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                    return Product.builder()
+                            .id(productResponse.id())
+                            .title(productResponse.title())
+                            .price(productResponse.price())
+                            .quantity(productRequest.quantity())
+                            .build();
+                }).toList();
     }
 }
