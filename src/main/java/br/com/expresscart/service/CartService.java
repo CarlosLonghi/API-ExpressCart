@@ -8,10 +8,9 @@ import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
 import br.com.expresscart.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -64,11 +63,25 @@ public class CartService {
         return cartRepository.save(savedCart);
     }
 
+    public Cart clearCart(String cartId) {
+        Cart savedCart = findCartById(cartId);
+
+        if (savedCart.getStatus().equals(Status.SOLD)) {
+            throw new IllegalArgumentException("Não é possivel limpar os produtos de um carrinho já vendido");
+        }
+
+        List<Product> emptyProductList = new ArrayList<>();
+        savedCart.setProducts(emptyProductList);
+        savedCart.calculateTotalPrice();
+
+        return cartRepository.save(savedCart);
+    }
+
     private List<Product> buildProductListFromRequest(CartRequest cartRequest) {
         return cartRequest.products().stream()
                 .map(productRequest -> {
                     PlatziProductResponse productResponse = productService.getProductById(productRequest.id())
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                            .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado: id=" + productRequest.id()));
                     return Product.builder()
                             .id(productResponse.id())
                             .title(productResponse.title())

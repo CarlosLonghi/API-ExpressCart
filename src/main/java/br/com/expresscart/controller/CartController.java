@@ -36,4 +36,9 @@ public class CartController {
     public ResponseEntity<Cart> payCart(@PathVariable String id, @RequestBody PaymentRequest request) {
         return ResponseEntity.ok(cartService.payCart(id, request));
     }
+
+    @PutMapping("/{id}/clear")
+    public ResponseEntity<Cart> clearCart(@PathVariable String id) {
+        return ResponseEntity.ok(cartService.clearCart(id));
+    }
 }
