@@ -1,6 +1,7 @@
 package br.com.expresscart.controller;
 
 import br.com.expresscart.controller.request.CartRequest;
+import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.service.CartService;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +30,10 @@ public class CartController {
     @PutMapping("/{id}")
     public ResponseEntity<Cart> updateCart(@PathVariable String id, @RequestBody CartRequest request) {
         return ResponseEntity.ok(cartService.updateCart(id, request));
+    }
+
+    @PutMapping("/{id}/payment")
+    public ResponseEntity<Cart> payCart(@PathVariable String id, @RequestBody PaymentRequest request) {
+        return ResponseEntity.ok(cartService.payCart(id, request));
     }
 }

@@ -2,6 +2,7 @@ package br.com.expresscart.service;
 
 import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.request.CartRequest;
+import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
@@ -50,6 +51,15 @@ public class CartService {
 
         savedCart.setProducts(productList);
         savedCart.calculateTotalPrice();
+
+        return cartRepository.save(savedCart);
+    }
+
+    public Cart payCart(String id, PaymentRequest paymentRequest) {
+        Cart savedCart = findCartById(id);
+
+        savedCart.setPaymentMethod(paymentRequest.paymentMethod());
+        savedCart.setStatus(Status.SOLD);
 
         return cartRepository.save(savedCart);
     }
