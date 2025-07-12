@@ -6,6 +6,8 @@ import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
+import br.com.expresscart.exceptions.BusinessException;
+import br.com.expresscart.exceptions.DataNotFoundException;
 import br.com.expresscart.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +25,8 @@ public class CartService {
     public Cart createCart(CartRequest cartRequest) {
         cartRepository.findByClientIdAndStatus(cartRequest.clientId(), Status.OPEN)
                 .ifPresent(cart -> {
-                    throw new IllegalArgumentException("Já existe um carrinho aberto para esse cliente");
+                    throw new BusinessException("Já existe um carrinho aberto para o cliente de id: " + cartRequest.clientId()
+                    );
                 });
 
         List<Product> productList = buildProductListFromRequest(cartRequest);
@@ -40,7 +43,7 @@ public class CartService {
 
     public Cart findCartById(String id) {
         return cartRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Carrinho não encontrado"));
+                .orElseThrow(() -> new DataNotFoundException("Carrinho não encontrado."));
     }
 
     public Cart updateCart(String id, CartRequest cartRequest) {
@@ -67,7 +70,7 @@ public class CartService {
         Cart savedCart = findCartById(cartId);
 
         if (savedCart.getStatus().equals(Status.SOLD)) {
-            throw new IllegalArgumentException("Não é possivel limpar os produtos de um carrinho já vendido");
+            throw new BusinessException("Não é possivel limpar os produtos de um carrinho já vendido.");
         }
 
         List<Product> emptyProductList = new ArrayList<>();
@@ -81,7 +84,7 @@ public class CartService {
         return cartRequest.products().stream()
                 .map(productRequest -> {
                     PlatziProductResponse productResponse = productService.getProductById(productRequest.id())
-                            .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado: id=" + productRequest.id()));
+                            .orElseThrow(() -> new DataNotFoundException("Produto não encontrado: id=" + productRequest.id()));
                     return Product.builder()
                             .id(productResponse.id())
                             .title(productResponse.title())
