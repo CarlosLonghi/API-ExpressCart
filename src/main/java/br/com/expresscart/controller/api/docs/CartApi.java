@@ -36,7 +36,8 @@ public interface CartApi {
             ),
             @ApiResponse(responseCode = "400", description = "Corpo da requisição inválido", content = @Content),
             @ApiResponse(responseCode = "400", description = "Já existe um Carrinho aberto para o cliente informado", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado (client error)", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado (client error)", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<Cart> createCart(
       @RequestBody(
@@ -62,7 +63,8 @@ public interface CartApi {
                             schema = @Schema(implementation = Cart.class) // TODO: criar Response DTO para carrinho
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<Cart> getCartById(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
@@ -85,7 +87,8 @@ public interface CartApi {
             ),
             @ApiResponse(responseCode = "400", description = "Corpo da requisição inválido", content = @Content),
             @ApiResponse(responseCode = "400", description = "Já existe um Carrinho aberto para o cliente informado", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado (client error)", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado (client error)", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<Cart> updateCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
@@ -114,7 +117,8 @@ public interface CartApi {
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Operação cancelada. O carrinho informado já foi pago.", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<Cart> payCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
@@ -136,7 +140,8 @@ public interface CartApi {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Carrinho limpo", content = @Content),
             @ApiResponse(responseCode = "400", description = "Não é possível limpar um carrinho já vendido.", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Carrinho não encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<Cart> clearCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)

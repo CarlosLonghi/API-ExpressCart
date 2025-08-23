@@ -53,7 +53,8 @@ public interface ProductApi {
                             schema = @Schema(implementation = PlatziProductResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado", content = @Content)
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno da aplicação", content = @Content)
     })
     ResponseEntity<PlatziProductResponse> getProductById(
             @Parameter(in = ParameterIn.PATH, description = "ID do Produto", required = true)
