@@ -24,12 +24,18 @@ public class ProductService {
     @Cacheable(value = "products")
     public List<PlatziProductResponse> getAllProducts() {
         log.info("Buscando todos os produtos");
-        return platziStoreClient.getAllProducts();
+
+        try {
+            return platziStoreClient.getAllProducts();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Cacheable(value = "product", key = "#id")
     public Optional<PlatziProductResponse> getProductById(Long id) {
         log.info("Buscando produto com id={}", id);
+
         try {
             PlatziProductResponse platziProductResponse = platziStoreClient.getProductById(id);
             return Optional.of(platziProductResponse);

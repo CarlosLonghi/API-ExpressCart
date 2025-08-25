@@ -9,9 +9,9 @@ public class CustomErrorDecoder implements ErrorDecoder {
     public Exception decode(String methodKey, Response response) {
         switch (response.status()) {
             case 400:
-                return new DataNotFoundException("Product not found");
+                return new DataNotFoundException("Produto não encontrado (Platzi Client)");
             default:
-                return new Exception("Exception while getting product");
+                return new Exception("Erro ao buscar produto (Platzi Client)");
         }
     }
 }
