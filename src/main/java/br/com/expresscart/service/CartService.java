@@ -49,6 +49,10 @@ public class CartService {
     public Cart updateCart(String id, CartRequest cartRequest) {
         Cart savedCart = findCartById(id);
 
+        if (savedCart.getStatus().equals(Status.SOLD)) {
+            throw new BusinessException("Não é possivel alterar os dados de um carrinho já vendido.");
+        }
+
         List<Product> productList = buildProductListFromRequest(cartRequest);
 
         savedCart.setProducts(productList);
@@ -60,6 +64,10 @@ public class CartService {
     public Cart payCart(String id, PaymentRequest paymentRequest) {
         Cart savedCart = findCartById(id);
 
+        if (savedCart.getStatus().equals(Status.SOLD)) {
+            throw new BusinessException("Operação cancelada. O carrinho informado já foi pago.");
+        }
+
         savedCart.setPaymentMethod(paymentRequest.paymentMethod());
         savedCart.setStatus(Status.SOLD);
 
@@ -70,7 +78,7 @@ public class CartService {
         Cart savedCart = findCartById(cartId);
 
         if (savedCart.getStatus().equals(Status.SOLD)) {
-            throw new BusinessException("Não é possivel limpar os produtos de um carrinho já vendido.");
+            throw new BusinessException("Não é possivel limpar um carrinho já vendido.");
         }
 
         List<Product> emptyProductList = new ArrayList<>();
