@@ -1,5 +1,6 @@
-package br.com.expresscart.exceptions;
+package br.com.expresscart.config;
 
+import br.com.expresscart.exception.handler.DataNotFoundException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 
