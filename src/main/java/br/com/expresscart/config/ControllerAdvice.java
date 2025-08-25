@@ -1,5 +1,9 @@
-package br.com.expresscart.exceptions;
+package br.com.expresscart.config;
 
+import br.com.expresscart.exception.handler.BusinessException;
+import br.com.expresscart.exception.handler.DataNotFoundException;
+import br.com.expresscart.exception.response.GenericErrorResponse;
+import br.com.expresscart.exception.response.ValidationErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -83,17 +87,5 @@ public class ControllerAdvice {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-    }
-
-    // ERRORS RESPONSE
-    public record GenericErrorResponse(LocalDateTime timestamp, int status, String message) {}
-
-    public record ValidationErrorResponse(String field, String message) {
-        public ValidationErrorResponse(FieldError fieldError) {
-            this(
-                    fieldError.getField(),
-                    fieldError.getDefaultMessage()
-            );
-        }
     }
 }
