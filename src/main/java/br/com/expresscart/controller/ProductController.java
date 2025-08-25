@@ -1,6 +1,7 @@
 package br.com.expresscart.controller;
 
 import br.com.expresscart.client.response.PlatziProductResponse;
+import br.com.expresscart.controller.api.docs.ProductApi;
 import br.com.expresscart.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/product")
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductController implements ProductApi {
 
     private final ProductService productService;
 
