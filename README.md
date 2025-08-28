@@ -1,79 +1,64 @@
 # 🛒 Express Cart
-
-Um serviço simples e eficiente de gerenciamento de carrinho de compras, utilizando tecnologias modernas para oferecer **performance** e **escalabilidade**.
+Um serviço simples e eficiente de gerenciamento de carrinho de compras, construído com tecnologias modernas para oferecer performance e escalabilidade.
 
 ---
 
-## 🔗 Índice
+## 🔗 Sumário
 - [📖 Sobre o Projeto](#-sobre-o-projeto)
 - [🛠 Tecnologias Utilizadas](#-tecnologias-utilizadas)
 - [✨ Funcionalidades](#-funcionalidades)
-- [📸 Screenshots Swagger](#-screenshots-swagger)
-- [📐 Arquitetura](#-screenshots-swagger)
+- [📐 Arquitetura do Projeto](#-arquitetura-do-projeto)
 - [🚀 Como Rodar o Projeto](#-como-rodar-o-projeto)
+- [📚 Documentação da API](#-documentação-da-api)
 
 ---
 
 ## 📖 Sobre o Projeto
+O **Express Cart** gerencia um carrinho de compras de forma eficiente, integrando dados de uma API externa para disponibilizar produtos.
 
-O **Express Cart** gerencia um carrinho de compras simples, integrando dados de uma **API externa** para fornecer produtos disponíveis.
+O sistema foi projetado para **alta performance e escalabilidade**, combinando as seguintes tecnologias:
 
-O sistema combina **Cache (Redis)**, **Banco de dados NoSQL (MongoDB)** e **Contêineres (Docker)** para garantir **ALTA PERFORMANCE** e **ESCALABILIDADE**.
+- **Cache (Redis):** Reduz a latência e a carga sobre a API externa.
+- **Banco de dados NoSQL (MongoDB):** Oferece flexibilidade e escalabilidade para a persistência dos dados.
+- **Contêineres (Docker):** Simplifica o deploy e garante a consistência do ambiente.
 
 ### 🎯 Principais Objetivos
-- Oferecer uma experiência fluida ao usuário.
-- Minimizar chamadas desnecessárias à API externa através do **cache**.
-- Facilitar o deploy em ambientes **containerizados**.
+- Oferecer uma experiência de usuário rápida e fluida.
+- Minimizar chamadas desnecessárias à API externa através do cache inteligente.
+- Facilitar o deploy em ambientes containerizados.
 
 ---
 
 ## 🛠 Tecnologias Utilizadas
-
-- **Java 17**  
-  Linguagem moderna e performática.  
+- **Java 17** → Linguagem moderna e performática.  
   👉 [Documentação oficial](https://docs.oracle.com/en/java/)
 
-- **Lombok**  
-  Elimina boilerplate, gerando getters, setters e construtores.  
+- **Lombok** → Elimina código boilerplate, como getters, setters e construtores.  
   👉 [Documentação oficial](https://projectlombok.org/)
 
-- **Redis**  
-  Banco em memória usado como **cache** para otimizar requisições.  
+- **Redis** → Banco de dados em memória usado como cache para otimizar requisições.  
   👉 [Introdução ao Redis](https://redis.io/docs/)
 
-- **MongoDB**  
-  Banco de dados **NoSQL** para persistência flexível dos dados.  
+- **MongoDB** → Banco de dados NoSQL para persistência flexível dos dados.  
   👉 [Documentação oficial](https://www.mongodb.com/docs/)
 
-- **OpenFeign**  
-  Cliente HTTP declarativo que simplifica chamadas a APIs externas.  
+- **OpenFeign** → Cliente HTTP declarativo que simplifica chamadas a APIs externas.  
   👉 [Documentação oficial](https://spring.io/projects/spring-cloud-openfeign)
 
-- **Docker**  
-  Containerização para deploy simples e consistente.  
+- **Docker** → Containerização para um deploy simples e consistente.  
   👉 [Documentação oficial](https://docs.docker.com/)
 
-- **API Externa**  
-  Fonte de dados de produtos integrados ao carrinho.
+- **API Externa** → Fonte de dados de produtos.
 
 ---
 
 ## ✨ Funcionalidades
-- **Listar Produtos** – Busca produtos disponíveis na API externa.
-- **Criar, Alterar, Pagar e Limpar** – Controle total do carrinho.
-- **Cache Inteligente (Redis)** – Reduz tempo de resposta.
-- **Persistência com MongoDB** – Armazena o carrinho de forma segura.
-- **Integração com API Externa** – Produtos atualizados em tempo real.
-- **Suporte a Docker** – Facilita a execução em qualquer ambiente.
-
----
-
-## 📸 Screenshots Swagger
-- **Endpoints da API**
- ![Endpoints](docs/screenshots/swagger/api-expresscart-endpoints.png)
-
-- **Schemas** *(Entidades e DTO's)*
-  ![Schemas](docs/screenshots/swagger/api-expresscart-schemas.png)
+- **Listar Produtos:** Busca produtos disponíveis na API externa.
+- **Gerenciar Carrinho:** Controle total para criar, alterar, pagar e limpar o carrinho.
+- **Cache Inteligente (Redis):** Reduz o tempo de resposta e o uso de recursos.
+- **Persistência com MongoDB:** Armazena o carrinho de forma segura e flexível.
+- **Integração com API Externa:** Mantém os produtos atualizados em tempo real.
+- **Suporte a Docker:** Facilita a execução em qualquer ambiente.
 
 ---
 
@@ -123,8 +108,9 @@ src/
  │   │       │
  │   │       ├── service/
  │   │       │   ├── CartService
- │   │       │   ├── ProductService
- │   │       │   └── ExpressCartApplication
+ │   │       │   └── ProductService
+ │   │       │
+ │   │       └── ExpressCartApplication
  │   │
  │   └── resources/
  │       ├── application.yml
@@ -141,22 +127,39 @@ src/
 ## 🚀 Como Rodar o Projeto
 
 ### 🔧 Pré-requisitos
-- [Docker](https://docs.docker.com/) (ou instâncias locais de Redis e MongoDB)
-- [Java 17+](https://docs.oracle.com/en/java/)
-- [Maven](https://maven.apache.org/) (ou utilize `mvnw`)
+- **Docker** (ou instâncias locais de Redis e MongoDB)
+- **Java 17+**
+- **Maven** (ou utilize `mvnw`)
 
 ### ▶️ Rodando a aplicação
-
 ```bash
-# Clone este repositório
+# 1. Clone este repositório
 git clone https://github.com/CarlosLonghi/API-ExpressCart
 
-# Acesse a pasta do projeto
+# 2. Acesse a pasta do projeto
 cd API-ExpressCart
 
-# Suba os serviços do Docker
+# 3. Suba os serviços do Docker (Redis e MongoDB)
 docker-compose up -d
 
-# Compile e rode a aplicação
+# 4. Compile e rode a aplicação
 ./mvnw spring-boot:run
 ```
+
+---
+
+## 📚 Documentação da API
+A documentação interativa da API foi gerada com **Swagger** e pode ser acessada após a inicialização da aplicação.
+
+Ela permite que você **visualize e teste todos os endpoints disponíveis**.
+
+### Como acessar
+1. Certifique-se de que a aplicação está rodando (após seguir os passos em ["Como Rodar o Projeto"](#-como-rodar-o-projeto)).
+2. Abra seu navegador e navegue até a seguinte URL:
+
+👉 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+### O que você pode fazer na documentação
+- **Visualizar Endpoints:** Veja todos os endpoints da API, com seus métodos (GET, POST, PUT, DELETE), parâmetros e descrições.
+- **Testar Requisições:** Use a funcionalidade *Try it out* para enviar requisições e ver as respostas em tempo real.
+- **Consultar Schemas:** Entenda a estrutura das entidades (DTOs) utilizadas nas requisições e respostas.  
