@@ -2,6 +2,8 @@ package br.com.expresscart.controller.api.docs;
 
 import br.com.expresscart.controller.request.CartRequest;
 import br.com.expresscart.controller.request.PaymentRequest;
+import br.com.expresscart.controller.response.CartResponse;
+import br.com.expresscart.controller.response.PaymentResponse;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.exception.response.GenericErrorResponse;
 import br.com.expresscart.exception.response.ValidationErrorResponse;
@@ -50,7 +52,7 @@ public interface CartApi {
                     description = "Carrinho criado com sucesso",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Cart.class) // TODO: criar Response DTO para carrinho
+                            schema = @Schema(implementation = CartResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Carrinho Duplicado / Erro de Validação",
@@ -99,7 +101,7 @@ public interface CartApi {
                     )
             )
     })
-    ResponseEntity<Cart> createCart(
+    ResponseEntity<CartResponse> createCart(
       @RequestBody(
               description = "Requisição para criar novo carrinho",
               required = true,
@@ -154,7 +156,7 @@ public interface CartApi {
                     )
             )
     })
-    ResponseEntity<Cart> getCartById(
+    ResponseEntity<CartResponse> getCartById(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
             @PathVariable String id
     );
@@ -170,8 +172,7 @@ public interface CartApi {
                     description = "Carrinho atualizado com sucesso",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Cart.class)
-                            // TODO: adicionar example após criar o Response DTO
+                            schema = @Schema(implementation = CartResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Carrinho Duplicado / Erro de Validação",
@@ -220,7 +221,7 @@ public interface CartApi {
                     )
             )
     })
-    ResponseEntity<Cart> updateCart(
+    ResponseEntity<CartResponse> updateCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
             @PathVariable String id,
             @RequestBody(
@@ -257,7 +258,7 @@ public interface CartApi {
                     description = "Dados do Carrinho",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Cart.class) // TODO: criar Response DTO para carrinho
+                            schema = @Schema(implementation = PaymentResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Operação cancelada. O carrinho informado já foi pago.",
@@ -293,7 +294,7 @@ public interface CartApi {
                     )
             )
     })
-    ResponseEntity<Cart> payCart(
+    ResponseEntity<PaymentResponse> payCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
             @PathVariable String id,
             @RequestBody(
@@ -345,7 +346,7 @@ public interface CartApi {
                     )
             )
     })
-    ResponseEntity<Cart> clearCart(
+    ResponseEntity<CartResponse> clearCart(
             @Parameter(in = ParameterIn.PATH, description = "ID do Carrinho", required = true)
             @PathVariable String id
     );
