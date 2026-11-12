@@ -1,6 +1,7 @@
 package br.com.expresscart.controller.api.docs;
 
 import br.com.expresscart.controller.request.CartRequest;
+import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
@@ -177,10 +178,9 @@ public interface CartApi {
             @PathVariable String id
     );
 
-    // TODO: criar Response DTO para atualizar carrinho, alterando apenas os itens do carrinho
     @Operation(
             summary = "Atualizar um Carrinho",
-            description = "Rota para atualizar um Carrinho, adicionando ou removendo produtos"
+            description = "Rota para atualizar um Carrinho. A lista enviada substitui todos os itens atuais"
     )
     @ApiResponses({
             @ApiResponse(
@@ -191,7 +191,7 @@ public interface CartApi {
                             schema = @Schema(implementation = CartResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Carrinho Duplicado / Erro de Validação",
+            @ApiResponse(responseCode = "400", description = "Carrinho já vendido / Erro de Validação",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(
@@ -199,28 +199,30 @@ public interface CartApi {
                             ),
                             examples = {
                                     @ExampleObject(
-                                        name = "Carrinho duplicado",
+                                        name = "Carrinho já vendido",
                                         value = """
                                             {
                                               "timestamp": "2025-08-27T01:50:59.386Z",
                                               "status": 400,
-                                              "message": "Já existe um Carrinho aberto para o cliente informado"
+                                              "message": "Não é possivel alterar os dados de um carrinho já vendido."
                                             }
                                         """
                                     ),
                                     @ExampleObject(
                                         name = "Erro de validação",
                                         value = """
-                                            {
-                                              "field": "email",
-                                              "message": "O campo email deve ser um endereço válido"
-                                            }
+                                            [
+                                              {
+                                                "field": "products[0].quantity",
+                                                "message": "A quantidade deve ser maior que 0"
+                                              }
+                                            ]
                                         """
                                     )
                             }
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado na API externa",
+            @ApiResponse(responseCode = "404", description = "Carrinho ou Produto não encontrado",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = GenericErrorResponse.class),
@@ -244,12 +246,11 @@ public interface CartApi {
                     description = "Requisição para atualizar um carrinho",
                     required = true,
                     content = @Content(
-                            schema = @Schema(implementation = CartRequest.class),
+                            schema = @Schema(implementation = CartUpdateRequest.class),
                             examples = @ExampleObject(
                                 name = "Atualizar Carrinho",
                                 value = """
                                     {
-                                      "clientId": "1",
                                       "products": [
                                         {
                                           "id": 1,
@@ -261,7 +262,7 @@ public interface CartApi {
                             )
                     )
             )
-            CartRequest request
+            CartUpdateRequest request
     );
 
     @Operation(
@@ -277,7 +278,7 @@ public interface CartApi {
                             schema = @Schema(implementation = PaymentResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Operação cancelada. O carrinho informado já foi pago.",
+            @ApiResponse(responseCode = "400", description = "Carrinho já pago / Método de pagamento não informado",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = GenericErrorResponse.class),

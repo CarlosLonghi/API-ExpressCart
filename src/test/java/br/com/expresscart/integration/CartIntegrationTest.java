@@ -141,6 +141,32 @@ class CartIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void invalidUpdateIsRejectedAndLeavesCartUntouched() throws Exception {
+        stubProduct(1, "Camiseta", "10.00");
+        String id = createCartAndGetId(1, "[{\"id\": 1, \"quantity\": 2}]");
+
+        mockMvc.perform(put(BASE + "/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"products\": [{\"id\": 1, \"quantity\": 0}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("products[0].quantity"));
+
+        mockMvc.perform(get(BASE + "/{id}", id))
+                .andExpect(jsonPath("$.products[0].quantity").value(2))
+                .andExpect(jsonPath("$.totalPrice").value(20.0));
+    }
+
+    @Test
+    void paymentWithoutMethodIsRejectedAndCartStaysOpen() throws Exception {
+        stubProduct(1, "Camiseta", "10.00");
+        String id = createCartAndGetId(1, "[{\"id\": 1, \"quantity\": 1}]");
+
+        mockMvc.perform(put(BASE + "/{id}/payment", id).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(cartRepository.findById(id).orElseThrow().getStatus()).isEqualTo(Status.OPEN);
+    }
+
+    @Test
     void getUnknownCartReturns404() throws Exception {
         mockMvc.perform(get(BASE + "/{id}", "000000000000000000000000"))
                 .andExpect(status().isNotFound())

@@ -18,7 +18,7 @@ src/main/java/br/com/expresscart/
 │
 ├── controller/
 │   ├── api/docs/                        # OpenAPI contract interfaces (CartApi, ProductApi), annotations only
-│   ├── request/                         # CartRequest, ProductRequest, PaymentRequest (records + Bean Validation)
+│   ├── request/                         # CartRequest (POST), CartUpdateRequest (PUT), ProductRequest, PaymentRequest (records + Bean Validation)
 │   ├── response/                        # CartResponse, PaymentResponse (records, built from Cart)
 │   ├── CartController.java              # /api/v1/cart
 │   └── ProductController.java           # /api/v1/product
@@ -43,7 +43,7 @@ src/main/java/br/com/expresscart/
 
 ## Module responsibilities
 
-- **controller/**: HTTP boundary only. `@Valid` on request bodies (today only on `POST /cart`, B3). No business logic.
+- **controller/**: HTTP boundary only. Every `@RequestBody` is `@Valid`. No business logic.
 - **service/**: `CartService` owns every cart rule; `ProductService` is the only caller of `PlatziStoreClient` and owns caching.
 - **client/**: external contract. Its DTOs should not leak past `service/` (today they do, A2).
 - **entity/**: persistence model. `Cart` has setters for most fields; the only domain behavior is `calculateTotalPrice()`.
@@ -55,7 +55,8 @@ src/main/java/br/com/expresscart/
 - **I2: SOLD is terminal.** `updateCart`, `clearCart` and `payCart` reject a `SOLD` cart (`BusinessException` → 400). There is no transition back to `OPEN`.
 - **I3: Total is derived.** `totalPrice` has no setter; every item change must call `cart.calculateTotalPrice()` before saving.
 - **I4: Item price is a snapshot.** `title`/`price` are copied from Platzi when the item list is built; carts are never re-priced afterwards.
-- **I5: Update replaces items.** `PUT /cart/{id}` rebuilds the whole list from the request; `clientId` in the body is ignored.
+- **I5: Update replaces items.** `PUT /cart/{id}` (`CartUpdateRequest`, `products` only) rebuilds the whole list; owner and status never change. A `clientId` sent in the body is silently ignored (unknown JSON properties are not rejected).
+- **I5.1: Every request body is validated at the controller.** Services assume valid input (e.g. `payCart` does not re-check a null `paymentMethod`).
 - **I6: Every product id must exist upstream.** Unknown id → Platzi 400 → `ProductService` → `DataNotFoundException("Produto não encontrado: id=X")` → 404. Failed lookups are not cached.
 - **I6.1: Upstream failures are 502, never 500.** Any other `FeignException` → `ExternalServiceException` → 502, logged with its cause. A cart is not saved when a lookup fails.
 - **I7: Error shape.** Validation errors → 400 with a JSON **array** of `{field, message}`; every other handled error → `{timestamp, status, message}`.

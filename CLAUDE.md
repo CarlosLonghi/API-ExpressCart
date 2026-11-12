@@ -36,7 +36,7 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 - **Cart** (`carts` collection): `id`, `clientId`, `products` (embedded `Product` list), `totalPrice` (no setter, recomputed by `calculateTotalPrice()`), `status` (`OPEN` → `SOLD`), `paymentMethod` (`PIX`/`DEBIT`/`CREDIT`, null until paid).
 - **Product** (embedded): `id`, `title`, `price`, `quantity`. Title and price are a **snapshot** copied from Platzi when the item is added.
 - One `OPEN` cart per `clientId` (checked in the service, no DB index, so there is a race, B7).
-- `PUT /cart/{id}` **replaces** the item list; it doesn't merge.
+- `PUT /cart/{id}` **replaces** the item list; it doesn't merge. Its body is `CartUpdateRequest` (items only), not `CartRequest`.
 
 Details: `.claude/GLOSSARY.md`, `.claude/ARCHITECTURE.md`, `docs/ARCHITECTURE.md`.
 
