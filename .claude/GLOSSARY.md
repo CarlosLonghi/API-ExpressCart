@@ -37,7 +37,8 @@ Database `express-cart`, single collection `carts`.
 | Exception | HTTP | Typical message |
 |---|---|---|
 | `BusinessException` | 400 | `"Já existe um carrinho aberto para o cliente de id: X"`, `"Não é possivel alterar os dados de um carrinho já vendido."`, `"Operação cancelada. O carrinho informado já foi pago."`, `"Não é possivel limpar um carrinho já vendido."` |
-| `DataNotFoundException` | 404 | `"Carrinho não encontrado."`, `"Produto não encontrado (Platzi Client)"` |
+| `DataNotFoundException` | 404 | `"Carrinho não encontrado."`, `"Produto não encontrado: id=X"` |
+| `ExternalServiceException` | 502 | `"Erro ao consultar o catálogo de produtos (Platzi)"` |
 | `MethodArgumentNotValidException` | 400 | list of `{field, message}` from the Bean Validation messages in `controller/request/*` |
 
 ## Quick lookups
@@ -47,7 +48,7 @@ Database `express-cart`, single collection `carts`.
 | Cart rules | `service/CartService.java` |
 | Total price calculation | `entity/Cart.java#calculateTotalPrice` |
 | Catalog + cache | `service/ProductService.java` |
-| Feign client / error mapping | `client/PlatziStoreClient.java`, `config/CustomErrorDecoder.java` |
+| Feign client / error mapping | `client/PlatziStoreClient.java`, `service/ProductService.java` |
 | Error → HTTP | `config/ControllerAdvice.java` |
 | Swagger docs per endpoint | `controller/api/docs/CartApi.java`, `ProductApi.java` |
 | Validation messages | `controller/request/*.java` |

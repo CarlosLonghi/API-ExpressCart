@@ -63,9 +63,9 @@ flowchart TD
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
 | `repository` | Acesso ao MongoDB. | `CartRepository` |
 | `entity` | Documento Mongo e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
-| `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException` |
+| `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
 | `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
-| `config` | Handler global de erros, decoder de erros do Feign e metadados do OpenAPI. | `ControllerAdvice`, `CustomErrorDecoder`, `OpenApiConfig` |
+| `config` | Handler global de erros e metadados do OpenAPI. | `ControllerAdvice`, `OpenApiConfig` |
 
 ---
 
@@ -144,7 +144,7 @@ sequenceDiagram
         PS->>R: cache "product::{id}"
         alt cache miss
             PS->>P: GET /products/{id}
-            P-->>PS: produto (ou 400 se não existir)
+            P-->>PS: produto (400 se não existir → 404)
             PS->>R: grava (TTL 60s)
         end
         PS-->>CS: produto
@@ -159,9 +159,9 @@ sequenceDiagram
 
 1. `ProductService` é `@Cacheable` (caches `products` e `product`, chave = `id`).
 2. Em cache miss, chama `PlatziStoreClient` (Feign) na URL `expresscart.client.platzi`.
-3. Erros HTTP da Platzi passam pelo `CustomErrorDecoder`:
-   - `400` (a Platzi responde 400 para ID inexistente) → `DataNotFoundException` → **404**.
-   - qualquer outro → `Exception` genérica → **500**.
+3. O `ProductService` traduz os erros do Feign:
+   - `400` (a Platzi responde 400 para ID inexistente) → `DataNotFoundException` → **404** com o id na mensagem.
+   - qualquer outra falha (5xx, timeout, conexão) → `ExternalServiceException` → **502**.
 4. A lista vazia retorna **204 No Content**.
 
 ---
@@ -174,9 +174,9 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 
 | Método | Rota | Corpo | Sucesso | Erros |
 |---|---|---|---|---|
-| `POST` | `/api/v1/cart` | `CartRequest` | `201` `CartResponse` | 400 (validação / carrinho aberto duplicado), 404 (produto) |
+| `POST` | `/api/v1/cart` | `CartRequest` | `201` `CartResponse` | 400 (validação / carrinho aberto duplicado), 404 (produto), 502 (Platzi) |
 | `GET` | `/api/v1/cart/{id}` | n/a | `200` `CartResponse` | 404 (carrinho) |
-| `PUT` | `/api/v1/cart/{id}` | `CartRequest` | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho / produto) |
+| `PUT` | `/api/v1/cart/{id}` | `CartRequest` | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho / produto), 502 (Platzi) |
 | `PUT` | `/api/v1/cart/{id}/payment` | `PaymentRequest` | `200` `PaymentResponse` | 400 (já pago), 404 (carrinho) |
 | `PUT` | `/api/v1/cart/{id}/clear` | n/a | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho) |
 
@@ -184,8 +184,8 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 
 | Método | Rota | Sucesso | Erros |
 |---|---|---|---|
-| `GET` | `/api/v1/product` | `200` `PlatziProductResponse[]` ou `204` | 500 |
-| `GET` | `/api/v1/product/{id}` | `200` `PlatziProductResponse` | 404, 500 |
+| `GET` | `/api/v1/product` | `200` `PlatziProductResponse[]` ou `204` | 502 |
+| `GET` | `/api/v1/product/{id}` | `200` `PlatziProductResponse` | 404, 502 |
 
 ### Exemplos de payload
 
@@ -213,6 +213,7 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 | `BusinessException` | 400 | `{ "timestamp", "status", "message" }` |
 | `DataNotFoundException` | 404 | idem |
 | `NoHandlerFoundException` (rota inexistente) | 404 | idem |
+| `ExternalServiceException` (falha na Platzi) | 502 | idem |
 | `HttpRequestMethodNotSupportedException` | 405 | idem |
 | Qualquer outra `Exception` | 500 | idem, com mensagem fixa `"Erro interno da aplicação"` |
 

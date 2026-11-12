@@ -27,8 +27,8 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 
 - Controllers implement OpenAPI contract interfaces in `controller/api/docs/*Api.java`. When an endpoint contract changes, update the interface (signature + `@ApiResponse` docs) together with the controller.
 - Controllers return DTOs from `controller/response` for carts. **Known debt (A2):** `ProductController` still returns the external `client/response/PlatziProductResponse`, and `CartResponse` embeds `entity.Product`.
-- Global error translation is `config/ControllerAdvice`: `BusinessException` → 400, `DataNotFoundException` → 404, `MethodArgumentNotValidException` → 400 with a **list** of `{field, message}`, anything else → 500 `{timestamp, status, message}`.
-- Feign errors go through `config/CustomErrorDecoder` **before** reaching the service (Platzi answers 400 for unknown ids → `DataNotFoundException`). This makes the `FeignException`/`Optional.empty()` path in `ProductService` unreachable (bug B1).
+- Global error translation is `config/ControllerAdvice`: `BusinessException` → 400, `DataNotFoundException` → 404, `ExternalServiceException` → 502, `MethodArgumentNotValidException` → 400 with a **list** of `{field, message}`, anything else → 500 `{timestamp, status, message}`.
+- `ProductService` is the **only** place that translates Feign errors: Platzi 400 (its answer for unknown ids) → `DataNotFoundException("Produto não encontrado: id=X")` → 404; any other `FeignException` (5xx, timeout, connection) → `ExternalServiceException` → 502. There is no custom Feign `ErrorDecoder`; don't add one that throws domain exceptions, or the service's `catch` blocks become dead code again (old bug B1).
 - The cart state rule ("a `SOLD` cart is immutable") is currently enforced in `CartService` (repeated in 3 methods), not in the entity (debt A1).
 
 ## Domain model (summary)
