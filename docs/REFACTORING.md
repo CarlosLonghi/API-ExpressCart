@@ -38,10 +38,10 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Problema:** a checagem (`find`) e a gravação (`save`) não são atômicas. Duas requisições simultâneas podem criar dois carrinhos `OPEN` para o mesmo cliente.
 - **Sugestão:** índice único parcial no Mongo (`{clientId:1}` com `partialFilterExpression: {status: "OPEN"}`) e tratar `DuplicateKeyException` → 400/409.
 
-### 🟡 B8. Pequenos bugs
+### ✅ B8. Pequenos bugs (todos corrigidos)
 - ✅ `ControllerAdvice.handleNoHandlerFound`: trocado `Optional.of(...)` por `Optional.ofNullable`.
 - ✅ `CartRequest.clientId`: a mensagem do `@Min(1)` dizia *"não pode ser menor que 0"*. Agora diz *"deve ser maior que 0"*.
-- `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. **Mantido por enquanto:** carrinho vazio já é um estado válido (é o resultado do `clear`). Decidir se a criação deve exigir ao menos um item (`@NotEmpty`).
+- ✅ `CartRequest.products` aceitava lista vazia, então era possível criar carrinho sem itens. A criação agora exige ao menos um item (`@NotEmpty`). No `PUT /cart/{id}` a lista vazia continua aceita, porque equivale ao `clear`.
 - ✅ Itens com o mesmo `id` repetido no pedido viravam duas linhas no carrinho. Agora o pedido é recusado com 400 (`@UniqueProductIds`), na criação e na atualização.
 - ✅ `Cart.calculateTotalPrice()` lançava NPE com `products` nulo. O método público não existe mais: o total é calculado dentro da entidade e a lista de itens nunca fica nula.
 
@@ -139,7 +139,7 @@ Cada fase pode virar um PR pequeno, seguindo o padrão de branches que o reposit
 |---|---|---|
 | **0. Rede de segurança** ✅ | Testes de caracterização do comportamento atual | §5 |
 | **1. Correções** ✅ | Corrigir bugs sem mudar o design | B1, B2, B3, B4, B5 e parte do B8 (o restante vai para a Fase 2) |
-| **2. Domínio** | Comportamento na entidade, DTOs próprios | A1, A2, B8 (itens repetidos, lista nula, carrinho vazio na criação) |
+| **2. Domínio** ✅ | Comportamento na entidade, DTOs próprios | A1, A2, B8 (itens repetidos, lista nula, carrinho vazio na criação) |
 | **3. Organização** | Pacotes, nomes, config de cache | A3, A4 |
 | **4. API** | Semântica REST, `ProblemDetail`, Swagger atualizado | A5, §3 |
 | **5. Robustez** | Índice único, timeouts/resiliência, config externa | B7, A6 |

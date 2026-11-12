@@ -58,6 +58,7 @@ src/main/java/br/com/expresscart/
 - **I4: Item price is a snapshot.** `title`/`price` are copied from Platzi when the item list is built; carts are never re-priced afterwards.
 - **I5: Update replaces items.** `PUT /cart/{id}` (`CartUpdateRequest`, `products` only) rebuilds the whole list; owner and status never change. A `clientId` sent in the body is silently ignored (unknown JSON properties are not rejected).
 - **I5.2: One line per product.** A request listing the same product id twice is rejected with 400 (`@UniqueProductIds` on both cart request records). It is a boundary rule: `Cart` itself does not deduplicate, so any new entry point that builds item lists must apply the same constraint.
+- **I5.3: A cart is born with items but may become empty.** `POST /cart` requires at least one item (`@NotEmpty` on `CartRequest.products`); `PUT /cart/{id}` with `[]` and `/clear` are both valid ways to empty an open cart. `Cart.open` itself accepts an empty list: the rule is about the create endpoint, not about the entity's valid states.
 - **I5.1: Every request body is validated at the controller.** Services assume valid input (e.g. `payCart` does not re-check a null `paymentMethod`).
 - **I6: Every product id must exist upstream.** Unknown id → Platzi 400 → `ProductService` → `DataNotFoundException("Produto não encontrado: id=X")` → 404. Failed lookups are not cached.
 - **I6.1: Upstream failures are 502, never 500.** Any other `FeignException` → `ExternalServiceException` → 502, logged with its cause. A cart is not saved when a lookup fails.

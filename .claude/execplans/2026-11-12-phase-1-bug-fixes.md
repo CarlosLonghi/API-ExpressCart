@@ -1,7 +1,7 @@
 # ExecPlan: Phase 1, bug fixes without redesign
 
 **Date**: 2026-11-12
-**Status**: Complete (pending merge of the three PRs)
+**Status**: Complete
 **Covers**: B1, B2, B3, B4, B5, B8 (`docs/REFACTORING.md`)
 
 ## Goal
