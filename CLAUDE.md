@@ -27,7 +27,7 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 
 - Controllers implement OpenAPI contract interfaces in `controller/api/docs/*Api.java`. When an endpoint contract changes, update the interface (signature + `@ApiResponse` docs) together with the controller.
 - Controllers return DTOs from `controller/response` for carts. **Known debt (A2):** `ProductController` still returns the external `client/response/PlatziProductResponse`, and `CartResponse` embeds `entity.Product`.
-- Global error translation is `config/ControllerAdvice`: `BusinessException` → 400, `DataNotFoundException` → 404, `ExternalServiceException` → 502, `MethodArgumentNotValidException` → 400 with a **list** of `{field, message}`, anything else → 500 `{timestamp, status, message}`.
+- Global error translation is `config/ControllerAdvice`: `BusinessException` → 400, `DataNotFoundException` → 404, `ExternalServiceException` → 502, `MethodArgumentNotValidException` → 400 with a **list** of `{field, message}`, unreadable body / wrong type → 400, unsupported media type → 415, anything else → 500 `{timestamp, status, message}` (logged, fixed message, no internal details in the response).
 - `ProductService` is the **only** place that translates Feign errors: Platzi 400 (its answer for unknown ids) → `DataNotFoundException("Produto não encontrado: id=X")` → 404; any other `FeignException` (5xx, timeout, connection) → `ExternalServiceException` → 502. There is no custom Feign `ErrorDecoder`; don't add one that throws domain exceptions, or the service's `catch` blocks become dead code again (old bug B1).
 - The cart state rule ("a `SOLD` cart is immutable") is currently enforced in `CartService` (repeated in 3 methods), not in the entity (debt A1).
 
@@ -60,8 +60,7 @@ Details: `.claude/GLOSSARY.md`, `.claude/ARCHITECTURE.md`, `docs/ARCHITECTURE.md
 
 - `application.yml` sets `spring.data.redis.password: password`, but the compose Redis has no password (B6). It works anyway: Lettuce authenticates with `HELLO ... AUTH default <pwd>`, which a password-less Redis accepts. The integration tests run with exactly this combination on purpose.
 - `testcontainers.version` is pinned to 1.21.4 in `pom.xml`: the version managed by Boot 3.5.3 (1.21.2) fails against Docker 29+ ("client version 1.32 is too old").
-- `mvnw` is not marked executable in git: run `bash ./mvnw ...` if `./mvnw` gives "Permission denied".
+- Several source files are stored with **CRLF** line endings (no `* text=auto` in `.gitattributes`). Keep each file's existing endings when editing with scripts, or the diff shows the whole file as rewritten; check with `git diff --stat` before committing.
 - The cache uses **JDK serialization** (no `RedisCacheConfiguration`), which is why `PlatziProductResponse`/`PlatziCategoryResponse` implement `Serializable`. Changing those records invalidates cached entries; flush Redis if you see `SerializationException` after a change.
 - `@EnableCaching` lives on `ProductService`, not on a config class. Don't remove it during a refactor without adding it somewhere else.
 - `spring.mvc.throw-exception-if-no-handler-found` + `spring.web.resources.add-mappings: false` make unknown routes return JSON 404 through `ControllerAdvice`. Keep both if you touch web config.
-- Malformed JSON / invalid enum values currently produce **500**, not 400 (B4).

@@ -5,20 +5,25 @@ import br.com.expresscart.exception.handler.DataNotFoundException;
 import br.com.expresscart.exception.handler.ExternalServiceException;
 import br.com.expresscart.service.ProductService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static br.com.expresscart.support.TestFixtures.platziProduct;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProductController.class)
+@ExtendWith(OutputCaptureExtension.class)
 class ProductControllerTest {
 
     private static final String BASE = "/api/v1/product";
@@ -88,22 +93,24 @@ class ProductControllerTest {
     }
 
     @Test
-    void getById_nonNumericIdReturns500() throws Exception {
-        // B4: MethodArgumentTypeMismatchException cai no handler genérico
+    void getById_nonNumericIdReturns400() throws Exception {
         mockMvc.perform(get(BASE + "/{id}", "abc"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Erro interno da aplicação"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Valor inválido para o parâmetro 'id': abc"));
 
         verifyNoInteractions(productService);
     }
 
     @Test
-    void list_unexpectedErrorReturns500() throws Exception {
+    void list_unexpectedErrorReturns500WithoutLeakingDetailsAndLogsIt(CapturedOutput output) throws Exception {
         when(productService.getAllProducts()).thenThrow(new RuntimeException("boom"));
 
         mockMvc.perform(get(BASE))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.message").value("Erro interno da aplicação"));
+
+        assertThat(output).contains("Erro inesperado").contains("java.lang.RuntimeException: boom");
     }
 }

@@ -167,6 +167,19 @@ class CartIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void unknownPaymentMethodReturns400AndCartStaysOpen() throws Exception {
+        stubProduct(1, "Camiseta", "10.00");
+        String id = createCartAndGetId(1, "[{\"id\": 1, \"quantity\": 1}]");
+
+        mockMvc.perform(put(BASE + "/{id}/payment", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\": \"BOLETO\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        assertThat(cartRepository.findById(id).orElseThrow().getStatus()).isEqualTo(Status.OPEN);
+    }
+
+    @Test
     void getUnknownCartReturns404() throws Exception {
         mockMvc.perform(get(BASE + "/{id}", "000000000000000000000000"))
                 .andExpect(status().isNotFound())

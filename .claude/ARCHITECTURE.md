@@ -60,6 +60,7 @@ src/main/java/br/com/expresscart/
 - **I6: Every product id must exist upstream.** Unknown id → Platzi 400 → `ProductService` → `DataNotFoundException("Produto não encontrado: id=X")` → 404. Failed lookups are not cached.
 - **I6.1: Upstream failures are 502, never 500.** Any other `FeignException` → `ExternalServiceException` → 502, logged with its cause. A cart is not saved when a lookup fails.
 - **I7: Error shape.** Validation errors → 400 with a JSON **array** of `{field, message}`; every other handled error → `{timestamp, status, message}`.
+- **I7.1: Client mistakes are 4xx.** Unreadable JSON, unknown enum value, wrong field type, non-numeric path id → 400; wrong `Content-Type` → 415. A 500 means an unexpected server error and is always logged with its stack trace; its response body never carries exception details.
 - **I8: Products are cached.** `ProductService` results live in Redis for `spring.cache.redis.time-to-live` (60 s). Repeated lookups within the TTL don't hit Platzi.
 
 ## Data flow

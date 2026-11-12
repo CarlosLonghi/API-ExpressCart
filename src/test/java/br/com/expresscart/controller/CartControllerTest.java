@@ -113,11 +113,30 @@ class CartControllerTest {
     }
 
     @Test
-    void create_malformedJsonReturns500() throws Exception {
-        // B4: HttpMessageNotReadableException cai no handler genérico
+    void create_malformedJsonReturns400() throws Exception {
         mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("{ not json"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Erro interno da aplicação"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Corpo da requisição inválido: verifique o JSON e os valores permitidos em cada campo"));
+
+        verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void create_wrongFieldTypeReturns400() throws Exception {
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"clientId": "abc", "products": []}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Corpo da requisição inválido: verifique o JSON e os valores permitidos em cada campo"));
+    }
+
+    @Test
+    void create_nonJsonContentTypeReturns415() throws Exception {
+        mockMvc.perform(post(BASE).contentType(MediaType.TEXT_PLAIN).content("clientId=1"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.status").value(415))
+                .andExpect(jsonPath("$.message").value("Content-Type não suportado. Use application/json"));
     }
 
     // ---------- GET /cart/{id} ----------
@@ -216,12 +235,12 @@ class CartControllerTest {
     }
 
     @Test
-    void pay_unknownPaymentMethodReturns500() throws Exception {
-        // B4: enum inválido → HttpMessageNotReadableException → 500
+    void pay_unknownPaymentMethodReturns400() throws Exception {
         mockMvc.perform(put(BASE + "/{id}/payment", CART_ID).contentType(MediaType.APPLICATION_JSON).content("""
                         {"paymentMethod": "BOLETO"}
                         """))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Corpo da requisição inválido: verifique o JSON e os valores permitidos em cada campo"));
 
         verifyNoInteractions(cartService);
     }

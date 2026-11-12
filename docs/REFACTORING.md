@@ -20,15 +20,13 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Era:** quantidade 0, negativa ou > 100, `products: null` (NPE → 500) e `paymentMethod: null` (carrinho `SOLD` sem método de pagamento) passavam direto.
 - **Correção:** os dois endpoints validam o corpo com `@Valid`. O `PUT /cart/{id}` passou a usar `CartUpdateRequest`, só com `products`. Um `clientId` enviado no corpo continua sendo aceito e ignorado.
 
-### 🔴 B4. Entrada malformada responde 500 em vez de 400
-- **Onde:** `config/ControllerAdvice.java`
-- **Problema:** não há handler para `HttpMessageNotReadableException` (JSON inválido, `paymentMethod: "BOLETO"`) nem para `MethodArgumentTypeMismatchException` (`GET /product/abc`). Os dois caem no handler genérico e viram **500**.
-- **Sugestão:** adicionar handlers que retornem 400.
+### ✅ B4. Entrada malformada respondia 500 em vez de 400 (corrigido)
+- **Era:** JSON inválido, valor fora do enum (`paymentMethod: "BOLETO"`), tipo errado num campo e id não numérico na URL caíam no handler genérico e viravam 500.
+- **Correção:** handlers próprios no `ControllerAdvice`: `HttpMessageNotReadableException` → 400, `MethodArgumentTypeMismatchException` → 400, `HttpMediaTypeNotSupportedException` → 415.
 
-### 🟠 B5. Handler genérico engole exceções sem log
-- **Onde:** `config/ControllerAdvice.java` (`handleException`)
-- **Problema:** qualquer erro inesperado vira 500 **sem stack trace no log**, o que impede o diagnóstico.
-- **Sugestão:** `log.error("...", exception)` no handler genérico.
+### ✅ B5. Handler genérico engolia exceções sem log (corrigido)
+- **Era:** qualquer erro inesperado virava 500 sem stack trace no log.
+- **Correção:** o handler genérico registra `log.error("Erro inesperado", exception)`. A resposta continua com a mensagem fixa, sem expor detalhes internos.
 
 ### 🟡 B6. Senha do Redis não bate com o docker-compose (verificado: funciona)
 - **Onde:** `application.yml` (`spring.data.redis.password: password`) × `docker-compose.yml`
@@ -41,7 +39,7 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Sugestão:** índice único parcial no Mongo (`{clientId:1}` com `partialFilterExpression: {status: "OPEN"}`) e tratar `DuplicateKeyException` → 400/409.
 
 ### 🟡 B8. Pequenos bugs
-- `ControllerAdvice.handleNoHandlerFound`: `Optional.of(...)` lança NPE se a URL for nula. Deveria ser `Optional.ofNullable`.
+- ✅ `ControllerAdvice.handleNoHandlerFound`: trocado `Optional.of(...)` por `Optional.ofNullable`.
 - ✅ `CartRequest.clientId`: a mensagem do `@Min(1)` dizia *"não pode ser menor que 0"*. Agora diz *"deve ser maior que 0"*.
 - `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. **Mantido por enquanto:** carrinho vazio já é um estado válido (é o resultado do `clear`). Decidir se a criação deve exigir ao menos um item (`@NotEmpty`).
 - Itens com o mesmo `id` repetido no pedido não são agrupados e viram duas linhas no carrinho.
@@ -125,7 +123,7 @@ Textos com acentuação inconsistente ("possivel" × "possível").
 
 **Ao corrigir um bug:** altere o teste correspondente no mesmo commit. A tabela bug → testes está no ExecPlan [`.claude/execplans/2026-11-12-phase-0-characterization-tests.md`](../.claude/execplans/2026-11-12-phase-0-characterization-tests.md).
 
-**Ainda sem teste:** B5 (falta de log, sem efeito observável) e B7 (corrida, precisa de teste de concorrência junto com a correção).
+**Ainda sem teste:** B7 (corrida, precisa de teste de concorrência junto com a correção).
 
 **Pendências de build encontradas na Fase 0:**
 - O `mvnw` não é executável no git (`./mvnw` → *Permission denied*). Use `bash ./mvnw` até corrigir o modo do arquivo.
@@ -140,8 +138,8 @@ Cada fase pode virar um PR pequeno, seguindo o padrão de branches que o reposit
 | Fase | Objetivo | Itens |
 |---|---|---|
 | **0. Rede de segurança** ✅ | Testes de caracterização do comportamento atual | §5 |
-| **1. Correções** | Corrigir bugs sem mudar o design | B1, B2, B3, B4, B5, B8 |
-| **2. Domínio** | Comportamento na entidade, DTOs próprios | A1, A2 |
+| **1. Correções** ✅ | Corrigir bugs sem mudar o design | B1, B2, B3, B4, B5 e parte do B8 (o restante vai para a Fase 2) |
+| **2. Domínio** | Comportamento na entidade, DTOs próprios | A1, A2, B8 (itens repetidos, lista nula, carrinho vazio na criação) |
 | **3. Organização** | Pacotes, nomes, config de cache | A3, A4 |
 | **4. API** | Semântica REST, `ProblemDetail`, Swagger atualizado | A5, §3 |
 | **5. Robustez** | Índice único, timeouts/resiliência, config externa | B7, A6 |

@@ -15,4 +15,4 @@ Fill it out as you work; commit it alongside the change. Naming: `YYYY-MM-DD-nam
 | Date | Plan | Status |
 |------|------|--------|
 | 2026-11-12 | [Phase 0: characterization tests](2026-11-12-phase-0-characterization-tests.md) | Complete |
-| 2026-11-12 | [Phase 1: bug fixes](2026-11-12-phase-1-bug-fixes.md) | In Progress |
+| 2026-11-12 | [Phase 1: bug fixes](2026-11-12-phase-1-bug-fixes.md) | Complete |
