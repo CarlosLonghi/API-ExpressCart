@@ -9,7 +9,8 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 - Infra: `docker compose up -d` starts MongoDB (`mongo:4`, 27017) and Redis (`redis`, 6379). The app itself is not in the compose file.
 - Run: `./mvnw spring-boot:run` (or the IDE). No profiles; every setting is hard-coded in `src/main/resources/application.yml`.
 - Compile only: `./mvnw -q -DskipTests package`.
-- Tests: `./mvnw test`. Today only `ExpressCartApplicationTests.contextLoads` exists; the real suite arrives with Phase 0 of `docs/REFACTORING.md`.
+- Tests: `./mvnw test`. Unit tests need nothing; integration tests (`*IntegrationTest`) use **Testcontainers** (Mongo + Redis) and **WireMock** (fake Platzi API), so they need a running Docker daemon. They never call the real Platzi API.
+- Coverage report: `./mvnw verify` → `target/site/jacoco/index.html` (no minimum enforced yet; the Phase 0 suite sits at ~99% instructions / 100% branches).
 - Swagger UI: `/swagger-ui/index.html`; OpenAPI spec: `/v3/api-docs`.
 
 ## Commit convention
@@ -41,9 +42,12 @@ Details: `.claude/GLOSSARY.md`, `.claude/ARCHITECTURE.md`, `docs/ARCHITECTURE.md
 
 ## Testing conventions
 
-- Tests mirror the main package layout under `src/test/java/br/com/expresscart/`.
-- Unit tests: JUnit 5 + Mockito + AssertJ. Controller slices: `@WebMvcTest` + `@MockitoBean`.
-- Never call the real Platzi API from a test.
+- Tests mirror the main package layout under `src/test/java/br/com/expresscart/{entity,service,controller,...}`.
+- Unit tests: JUnit 5 + Mockito + AssertJ. Controller slices use `@WebMvcTest` + `@MockitoBean`.
+- Integration tests live in `integration/` and extend `support/AbstractIntegrationTest` (`@SpringBootTest` + MockMvc; Testcontainers Mongo + Redis and a WireMock server on a random port, wired through `@DynamicPropertySource`). Containers start once per JVM and are shared; Mongo, the caches and the WireMock stubs are reset before each test.
+- Shared builders/fixtures: `support/TestFixtures`; Platzi stubs: `support/PlatziStubs`.
+- `@WebMvcTest` slices must declare `@MockitoBean PlatziStoreClient`, because `@EnableFeignClients` sits on the main class and would otherwise try to build the Feign client inside the slice.
+- **Phase 0 tests are characterization tests:** they pin the *current* behavior, bugs included. Tests that pin a known bug are named/commented with the bug id (e.g. `// B3: ...`). When a refactor fixes that bug, update the test deliberately in the same commit, and never just to make it pass.
 
 ## Deeper-dive references
 
@@ -54,7 +58,8 @@ Details: `.claude/GLOSSARY.md`, `.claude/ARCHITECTURE.md`, `docs/ARCHITECTURE.md
 
 ## Gotchas
 
-- `application.yml` sets `spring.data.redis.password: password`, but the compose Redis has no password (B6, still to be verified).
+- `application.yml` sets `spring.data.redis.password: password`, but the compose Redis has no password (B6). It works anyway: Lettuce authenticates with `HELLO ... AUTH default <pwd>`, which a password-less Redis accepts. The integration tests run with exactly this combination on purpose.
+- `testcontainers.version` is pinned to 1.21.4 in `pom.xml`: the version managed by Boot 3.5.3 (1.21.2) fails against Docker 29+ ("client version 1.32 is too old").
 - `mvnw` is not marked executable in git: run `bash ./mvnw ...` if `./mvnw` gives "Permission denied".
 - The cache uses **JDK serialization** (no `RedisCacheConfiguration`), which is why `PlatziProductResponse`/`PlatziCategoryResponse` implement `Serializable`. Changing those records invalidates cached entries; flush Redis if you see `SerializationException` after a change.
 - `@EnableCaching` lives on `ProductService`, not on a config class. Don't remove it during a refactor without adding it somewhere else.
