@@ -1,5 +1,6 @@
 package br.com.expresscart.controller.request;
 
+import br.com.expresscart.controller.request.validation.UniqueProductIds;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ public record CartRequest(
 
         @NotNull(message = "Informe a lista de Produtos que deseja adicionar ao carrinho")
         @Valid
+        @UniqueProductIds
         List<ProductRequest> products
 ) {
 }
