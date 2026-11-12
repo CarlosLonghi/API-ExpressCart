@@ -1,5 +1,7 @@
 package br.com.expresscart.support;
 
+import com.github.tomakehurst.wiremock.http.Fault;
+
 import static br.com.expresscart.support.AbstractIntegrationTest.PLATZI;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
@@ -33,6 +35,12 @@ public final class PlatziStubs {
 
     public static void stubProductServerError(long id) {
         PLATZI.stubFor(get(urlEqualTo("/products/" + id)).willReturn(serverError()));
+    }
+
+    /** Derruba a conexão no meio da resposta, simulando a Platzi fora do ar. */
+    public static void stubProductListConnectionReset() {
+        PLATZI.stubFor(get(urlEqualTo("/products"))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
     }
 
     public static void stubProductList(String jsonArray) {

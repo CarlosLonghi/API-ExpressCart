@@ -2,8 +2,10 @@ package br.com.expresscart.config;
 
 import br.com.expresscart.exception.handler.BusinessException;
 import br.com.expresscart.exception.handler.DataNotFoundException;
+import br.com.expresscart.exception.handler.ExternalServiceException;
 import br.com.expresscart.exception.response.GenericErrorResponse;
 import br.com.expresscart.exception.response.ValidationErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestControllerAdvice
+@Slf4j
 public class ControllerAdvice {
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -65,6 +68,18 @@ public class ControllerAdvice {
         );
 
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<GenericErrorResponse> handleExternalServiceException(ExternalServiceException exception) {
+        log.error("Falha em serviço externo", exception);
+        GenericErrorResponse errorResponse = new GenericErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_GATEWAY.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

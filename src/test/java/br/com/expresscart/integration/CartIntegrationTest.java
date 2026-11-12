@@ -103,25 +103,27 @@ class CartIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unknownProductReturns404WithDecoderMessage() throws Exception {
-        // B1: a mensagem vem do CustomErrorDecoder, não do "Produto não encontrado: id=X" do CartService
+    void unknownProductReturns404WithProductId() throws Exception {
+        // Invariante I6
         stubUnknownProduct(999);
 
         createCart(1, "[{\"id\": 999, \"quantity\": 1}]")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Produto não encontrado (Platzi Client)"));
+                .andExpect(jsonPath("$.message").value("Produto não encontrado: id=999"));
 
         assertThat(cartRepository.count()).isZero();
     }
 
     @Test
-    void platziServerErrorReturns500() throws Exception {
-        // B2: erro 5xx da Platzi vira 500 genérico
+    void platziServerErrorReturns502AndDoesNotCreateCart() throws Exception {
         stubProductServerError(5);
 
         createCart(1, "[{\"id\": 5, \"quantity\": 1}]")
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Erro interno da aplicação"));
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.status").value(502))
+                .andExpect(jsonPath("$.message").value("Erro ao consultar o catálogo de produtos (Platzi)"));
+
+        assertThat(cartRepository.count()).isZero();
     }
 
     @Test

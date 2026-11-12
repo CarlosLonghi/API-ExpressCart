@@ -97,8 +97,7 @@ public class CartService {
     private List<Product> buildProductListFromRequest(CartRequest cartRequest) {
         return cartRequest.products().stream()
                 .map(productRequest -> {
-                    PlatziProductResponse productResponse = productService.getProductById(productRequest.id())
-                            .orElseThrow(() -> new DataNotFoundException("Produto não encontrado: id=" + productRequest.id()));
+                    PlatziProductResponse productResponse = productService.getProductById(productRequest.id());
                     return Product.builder()
                             .id(productResponse.id())
                             .title(productResponse.title())

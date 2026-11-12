@@ -40,6 +40,22 @@ import org.springframework.web.bind.annotation.PathVariable;
                 )
         )
 )
+@ApiResponse(responseCode = "502", description = "Falha ao consultar a API externa de produtos (Platzi)",
+        content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = GenericErrorResponse.class),
+                examples = @ExampleObject(
+                    name = "API externa indisponível",
+                    value = """
+                        {
+                          "timestamp": "2025-08-27T01:50:59.386Z",
+                          "status": 502,
+                          "message": "Erro ao consultar o catálogo de produtos (Platzi)"
+                        }
+                    """
+                )
+        )
+)
 public interface CartApi {
 
     @Operation(
@@ -84,7 +100,7 @@ public interface CartApi {
                             }
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado (Platzi Client)",
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado na API externa",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = GenericErrorResponse.class),
@@ -94,7 +110,7 @@ public interface CartApi {
                                     {
                                       "timestamp": "2025-08-27T01:50:59.386Z",
                                       "status": 404,
-                                      "message": "Produto não encontrado (Platzi Client)"
+                                      "message": "Produto não encontrado: id=1"
                                     }
                                 """
                             )
@@ -204,7 +220,7 @@ public interface CartApi {
                             }
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Produto não encontrado (Platzi Client)",
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado na API externa",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = GenericErrorResponse.class),
@@ -214,7 +230,7 @@ public interface CartApi {
                                     {
                                       "timestamp": "2025-08-27T01:50:59.386Z",
                                       "status": 404,
-                                      "message": "Produto não encontrado (Platzi Client)"
+                                      "message": "Produto não encontrado: id=1"
                                     }
                                 """
                             )

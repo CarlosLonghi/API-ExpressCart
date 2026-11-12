@@ -56,14 +56,42 @@ class ProductIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unknownProductReturns404FromDecoder() throws Exception {
-        // B1: o 404 vem do DataNotFoundException do decoder, não do Optional.empty() do controller
+    void unknownProductReturns404WithProductId() throws Exception {
         stubUnknownProduct(999);
 
         mockMvc.perform(get(BASE + "/{id}", 999))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("Produto não encontrado (Platzi Client)"));
+                .andExpect(jsonPath("$.message").value("Produto não encontrado: id=999"));
+    }
+
+    @Test
+    void unknownProductIsNotCached() throws Exception {
+        stubUnknownProduct(999);
+        mockMvc.perform(get(BASE + "/{id}", 999)).andExpect(status().isNotFound());
+
+        stubProduct(999, "Novo", "5.00");
+        mockMvc.perform(get(BASE + "/{id}", 999))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Novo"));
+    }
+
+    @Test
+    void platziServerErrorReturns502() throws Exception {
+        stubProductServerError(5);
+
+        mockMvc.perform(get(BASE + "/{id}", 5))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.message").value("Erro ao consultar o catálogo de produtos (Platzi)"));
+    }
+
+    @Test
+    void platziConnectionFailureReturns502() throws Exception {
+        stubProductListConnectionReset();
+
+        mockMvc.perform(get(BASE))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.status").value(502));
     }
 
     @Test
