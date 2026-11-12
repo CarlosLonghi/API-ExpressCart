@@ -23,18 +23,18 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 
 ## Layered architecture
 
-`controller` (record DTOs) → `service` (business rules) → `repository` (Spring Data MongoDB) → `entity` (Mongo document + enums). `ProductService` → `client/PlatziStoreClient` (Feign) for the catalog.
+`controller` (record DTOs) → `service` (use-case orchestration) → `repository` (Spring Data MongoDB) → `entity` (Mongo document that owns the cart state rules, + enums). `ProductService` → `client/PlatziStoreClient` (Feign) for the catalog.
 
 - Controllers implement OpenAPI contract interfaces in `controller/api/docs/*Api.java`. When an endpoint contract changes, update the interface (signature + `@ApiResponse` docs) together with the controller.
 - Controllers return DTOs from `controller/response` for carts. **Known debt (A2):** `ProductController` still returns the external `client/response/PlatziProductResponse`, and `CartResponse` embeds `entity.Product`.
 - Global error translation is `config/ControllerAdvice`: `BusinessException` → 400, `DataNotFoundException` → 404, `ExternalServiceException` → 502, `MethodArgumentNotValidException` → 400 with a **list** of `{field, message}`, unreadable body / wrong type → 400, unsupported media type → 415, anything else → 500 `{timestamp, status, message}` (logged, fixed message, no internal details in the response).
 - `ProductService` is the **only** place that translates Feign errors: Platzi 400 (its answer for unknown ids) → `DataNotFoundException("Produto não encontrado: id=X")` → 404; any other `FeignException` (5xx, timeout, connection) → `ExternalServiceException` → 502. There is no custom Feign `ErrorDecoder`; don't add one that throws domain exceptions, or the service's `catch` blocks become dead code again (old bug B1).
-- The cart state rule ("a `SOLD` cart is immutable") is currently enforced in `CartService` (repeated in 3 methods), not in the entity (debt A1).
+- Cart state rules live in `entity/Cart`, which has **no setters and no builder**: it only changes through `Cart.open(...)`, `replaceItems(...)`, `clear()` and `pay(...)`. Each one rejects a `SOLD` cart and keeps the total in sync. `CartService` only loads, calls the entity and saves. Don't add setters back; add a method that states the business operation.
 
 ## Domain model (summary)
 
-- **Cart** (`carts` collection): `id`, `clientId`, `products` (embedded `Product` list), `totalPrice` (no setter, recomputed by `calculateTotalPrice()`), `status` (`OPEN` → `SOLD`), `paymentMethod` (`PIX`/`DEBIT`/`CREDIT`, null until paid).
-- **Product** (embedded): `id`, `title`, `price`, `quantity`. Title and price are a **snapshot** copied from Platzi when the item is added.
+- **Cart** (`carts` collection): `id`, `clientId`, `products` (embedded, unmodifiable `Product` list), `totalPrice` (derived inside the entity), `status` (`OPEN` → `SOLD`), `paymentMethod` (`PIX`/`DEBIT`/`CREDIT`, null until paid).
+- **Product** (embedded, immutable): `id`, `title`, `price`, `quantity`, `subtotal()`. Title and price are a **snapshot** copied from Platzi when the item is added.
 - One `OPEN` cart per `clientId` (checked in the service, no DB index, so there is a race, B7).
 - `PUT /cart/{id}` **replaces** the item list; it doesn't merge. Its body is `CartUpdateRequest` (items only), not `CartRequest`.
 
@@ -45,7 +45,7 @@ Details: `.claude/GLOSSARY.md`, `.claude/ARCHITECTURE.md`, `docs/ARCHITECTURE.md
 - Tests mirror the main package layout under `src/test/java/br/com/expresscart/{entity,service,controller,...}`.
 - Unit tests: JUnit 5 + Mockito + AssertJ. Controller slices use `@WebMvcTest` + `@MockitoBean`.
 - Integration tests live in `integration/` and extend `support/AbstractIntegrationTest` (`@SpringBootTest` + MockMvc; Testcontainers Mongo + Redis and a WireMock server on a random port, wired through `@DynamicPropertySource`). Containers start once per JVM and are shared; Mongo, the caches and the WireMock stubs are reset before each test.
-- Shared builders/fixtures: `support/TestFixtures`; Platzi stubs: `support/PlatziStubs`.
+- Shared builders/fixtures: `support/TestFixtures` (`cart(Status, items...)` returns a cart as it would come from Mongo: id set by reflection, paid with PIX when `SOLD`); Platzi stubs: `support/PlatziStubs`.
 - `@WebMvcTest` slices must declare `@MockitoBean PlatziStoreClient`, because `@EnableFeignClients` sits on the main class and would otherwise try to build the Feign client inside the slice.
 - **Phase 0 tests are characterization tests:** they pin the *current* behavior, bugs included. Tests that pin a known bug are named/commented with the bug id (e.g. `// B3: ...`). When a refactor fixes that bug, update the test deliberately in the same commit, and never just to make it pass.
 

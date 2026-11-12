@@ -43,15 +43,15 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - ✅ `CartRequest.clientId`: a mensagem do `@Min(1)` dizia *"não pode ser menor que 0"*. Agora diz *"deve ser maior que 0"*.
 - `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. **Mantido por enquanto:** carrinho vazio já é um estado válido (é o resultado do `clear`). Decidir se a criação deve exigir ao menos um item (`@NotEmpty`).
 - Itens com o mesmo `id` repetido no pedido não são agrupados e viram duas linhas no carrinho.
-- `Cart.calculateTotalPrice()` lança NPE se `products` for nulo.
+- ✅ `Cart.calculateTotalPrice()` lançava NPE com `products` nulo. O método público não existe mais: o total é calculado dentro da entidade e a lista de itens nunca fica nula.
 
 ---
 
 ## 2. Design e arquitetura
 
-### 🟠 A1. Modelo de domínio anêmico; regra "carrinho vendido" repetida 3×
-- **Onde:** `CartService.updateCart / payCart / clearCart`
-- **Sugestão:** levar o comportamento para a entidade, por exemplo `cart.replaceItems(items)`, `cart.clear()` e `cart.pay(method)`. Cada um valida o estado internamente (`ensureOpen()`) e recalcula o total. Assim o service fica só com a orquestração e os setters públicos de `status`/`paymentMethod` podem sair.
+### ✅ A1. Modelo de domínio anêmico; regra "carrinho vendido" repetida 3× (corrigido)
+- **Era:** o `CartService` repetia a checagem de `SOLD` em `updateCart`, `payCart` e `clearCart`, alterava o carrinho por setters e precisava lembrar de recalcular o total.
+- **Correção:** a entidade `Cart` só muda por `Cart.open(...)`, `replaceItems(...)`, `clear()` e `pay(...)`. Cada método valida o estado e recalcula o total. Não há mais setters nem builder. O `CartService` só carrega, chama a entidade e salva.
 
 ### 🟠 A2. DTOs vazam entidades e modelos externos
 - `CartResponse` expõe `entity.Product` e `entity.Status` diretamente.

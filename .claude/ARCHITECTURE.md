@@ -24,8 +24,8 @@ src/main/java/br/com/expresscart/
 │   └── ProductController.java           # /api/v1/product
 │
 ├── entity/
-│   ├── Cart.java                        # @Document("carts"); calculateTotalPrice()
-│   ├── Product.java                     # embedded cart item (snapshot of title/price)
+│   ├── Cart.java                        # @Document("carts"); open / replaceItems / clear / pay; owns the state rules and the total
+│   ├── Product.java                     # embedded cart item, immutable (snapshot of title/price); subtotal()
 │   ├── Status.java                      # OPEN, SOLD
 │   └── PaymentMethod.java               # PIX, DEBIT, CREDIT
 │
@@ -37,23 +37,23 @@ src/main/java/br/com/expresscart/
 │   └── CartRepository.java              # MongoRepository + findByClientIdAndStatus
 │
 └── service/
-    ├── CartService.java                 # all cart rules (create/find/update/pay/clear)
+    ├── CartService.java                 # cart use cases: load → call Cart → save; one-open-cart-per-client check
     └── ProductService.java              # @Cacheable("products"), @Cacheable("product", key=#id); translates FeignException; @EnableCaching lives here
 ```
 
 ## Module responsibilities
 
 - **controller/**: HTTP boundary only. Every `@RequestBody` is `@Valid`. No business logic.
-- **service/**: `CartService` owns every cart rule; `ProductService` is the only caller of `PlatziStoreClient` and owns caching.
+- **service/**: `CartService` orchestrates (load, catalog lookup, save) and owns the only rule that needs the repository (I1); `ProductService` is the only caller of `PlatziStoreClient` and owns caching.
 - **client/**: external contract. Its DTOs should not leak past `service/` (today they do, A2).
-- **entity/**: persistence model. `Cart` has setters for most fields; the only domain behavior is `calculateTotalPrice()`.
+- **entity/**: persistence model **and** domain behavior. `Cart` has no setters/builder; state changes only through its business methods. Spring Data reads it via the protected no-arg constructor and field access.
 - **config/**: cross-cutting (errors, OpenAPI). Changes here affect every endpoint.
 
 ## Architectural invariants (current behavior: keep or change deliberately)
 
 - **I1: One open cart per client.** `CartService.createCart` rejects a second `OPEN` cart for the same `clientId` (`BusinessException` → 400). Service-level check only; no unique index (B7).
-- **I2: SOLD is terminal.** `updateCart`, `clearCart` and `payCart` reject a `SOLD` cart (`BusinessException` → 400). There is no transition back to `OPEN`.
-- **I3: Total is derived.** `totalPrice` has no setter; every item change must call `cart.calculateTotalPrice()` before saving.
+- **I2: SOLD is terminal.** `Cart.replaceItems`, `clear` and `pay` reject a `SOLD` cart (`BusinessException` → 400, one message per operation). There is no transition back to `OPEN`. `CartService.updateCart` calls `cart.ensureItemsCanChange()` **before** the catalog lookup, so a sold cart is refused without calling Platzi.
+- **I3: Total is derived.** `totalPrice` is recomputed inside `Cart` whenever items change; the item list is an unmodifiable copy, so it cannot drift. No caller computes or sets the total.
 - **I4: Item price is a snapshot.** `title`/`price` are copied from Platzi when the item list is built; carts are never re-priced afterwards.
 - **I5: Update replaces items.** `PUT /cart/{id}` (`CartUpdateRequest`, `products` only) rebuilds the whole list; owner and status never change. A `clientId` sent in the body is silently ignored (unknown JSON properties are not rejected).
 - **I5.1: Every request body is validated at the controller.** Services assume valid input (e.g. `payCart` does not re-check a null `paymentMethod`).
