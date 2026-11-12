@@ -1,0 +1,246 @@
+# 📐 Arquitetura do Express Cart
+
+Este documento descreve **como o sistema funciona hoje**: camadas, fluxos, modelo de dados, regras de negócio, contratos HTTP e configuração. Ele serve de referência para a refatoração. Os problemas e melhorias identificados estão em [REFACTORING.md](REFACTORING.md).
+
+---
+
+## 1. Visão geral
+
+O Express Cart é uma API REST (Spring Boot) que gerencia carrinhos de compra. Ele **não tem catálogo próprio**: os produtos vêm da API pública [Platzi Fake Store](https://fakeapi.platzi.com/) e ficam em cache no Redis. Os carrinhos são guardados no MongoDB.
+
+```mermaid
+flowchart LR
+    C[Cliente HTTP] -->|REST /api/v1| API[Express Cart<br/>Spring Boot]
+    API -->|Feign| P[Platzi Fake Store API<br/>api.escuelajs.co]
+    API <-->|"@Cacheable (TTL 60s)"| R[(Redis<br/>cache de produtos)]
+    API <-->|Spring Data| M[(MongoDB<br/>coleção carts)]
+```
+
+### Stack
+
+| Item | Versão / valor | Onde |
+|---|---|---|
+| Java | 21 | `pom.xml` (`java.version`) |
+| Spring Boot | 3.5.3 | `pom.xml` (parent) |
+| Spring Cloud | 2025.0.0 (OpenFeign fixado em 4.2.2) | `pom.xml` |
+| springdoc-openapi | 2.8.9 | `pom.xml` |
+| MongoDB | imagem `mongo:4` | `docker-compose.yml` |
+| Redis | imagem `redis` (sem tag) | `docker-compose.yml` |
+| Lombok | gerenciado pelo Boot | `pom.xml` |
+
+---
+
+## 2. Camadas e pacotes
+
+```mermaid
+flowchart TD
+    subgraph controller
+        CC[CartController] -.implementa.-> CA[api.docs.CartApi]
+        PC[ProductController] -.implementa.-> PA[api.docs.ProductApi]
+    end
+    subgraph service
+        CS[CartService]
+        PS[ProductService]
+    end
+    subgraph client
+        PSC[PlatziStoreClient]
+    end
+    CC --> CS
+    PC --> PS
+    CS --> PS
+    CS --> CR[repository.CartRepository]
+    PS --> PSC
+    CR --> ENT[entity.Cart / Product]
+```
+
+| Pacote | Responsabilidade | Classes |
+|---|---|---|
+| `controller` | Endpoints REST. Delegam tudo para os services. | `CartController`, `ProductController` |
+| `controller.api.docs` | Interfaces só com anotações OpenAPI/Swagger. Os controllers as implementam para manter a documentação fora do código dos endpoints. | `CartApi`, `ProductApi` |
+| `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `ProductRequest`, `PaymentRequest` |
+| `controller.response` | DTOs de saída do carrinho. | `CartResponse`, `PaymentResponse` |
+| `service` | Regras de negócio (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
+| `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
+| `repository` | Acesso ao MongoDB. | `CartRepository` |
+| `entity` | Documento Mongo e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
+| `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException` |
+| `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
+| `config` | Handler global de erros, decoder de erros do Feign e metadados do OpenAPI. | `ControllerAdvice`, `CustomErrorDecoder`, `OpenApiConfig` |
+
+---
+
+## 3. Modelo de dados
+
+### `Cart`: documento da coleção `carts` (MongoDB)
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `id` | `String` | ObjectId gerado pelo Mongo |
+| `clientId` | `Long` | Identificador do cliente (não é validado contra nenhum cadastro) |
+| `totalPrice` | `BigDecimal` | Sem setter; calculado por `calculateTotalPrice()` = Σ(`price` × `quantity`) |
+| `products` | `List<Product>` | Itens embutidos no documento |
+| `status` | `Status` | `OPEN` ou `SOLD` |
+| `paymentMethod` | `PaymentMethod` | `PIX`, `DEBIT` ou `CREDIT`; nulo até o pagamento (omitido no JSON quando nulo) |
+
+### `Product`: item embutido no carrinho
+
+`id`, `title`, `price`, `quantity`. O `title` e o `price` são **copiados da API externa no momento em que o item é adicionado** (é uma cópia do preço naquele instante). Se o preço mudar depois na Platzi, o carrinho não é atualizado até o próximo `PUT`.
+
+### Máquina de estados do carrinho
+
+```mermaid
+stateDiagram-v2
+    [*] --> OPEN: POST /cart
+    OPEN --> OPEN: PUT /cart/{id} (substitui itens)
+    OPEN --> OPEN: PUT /cart/{id}/clear (esvazia)
+    OPEN --> SOLD: PUT /cart/{id}/payment
+    SOLD --> [*]
+    note right of SOLD
+        Alterar, limpar ou pagar
+        um carrinho SOLD → 400
+    end note
+```
+
+---
+
+## 4. Regras de negócio (`CartService`)
+
+| # | Regra | Onde | Erro |
+|---|---|---|---|
+| R1 | Um cliente só pode ter **um** carrinho `OPEN` por vez | `createCart` → `findByClientIdAndStatus` | `BusinessException` → 400 |
+| R2 | Todo produto do pedido precisa existir na API Platzi | `buildProductListFromRequest` | `DataNotFoundException` → 404 |
+| R3 | O total é recalculado sempre que os itens mudam | `createCart`, `updateCart`, `clearCart` | n/a |
+| R4 | Carrinho `SOLD` não pode ser alterado, limpo nem pago de novo | `updateCart`, `clearCart`, `payCart` (checagem repetida 3×) | `BusinessException` → 400 |
+| R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `updateCart` | n/a |
+| R6 | Quantidade por item: 1 a 100 | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
+
+> ⚠️ Na atualização, o `clientId` enviado no corpo é **ignorado**, mas continua obrigatório pelo DTO. A validação (`@Valid`) só é aplicada no `POST`. Veja [REFACTORING.md](REFACTORING.md).
+
+---
+
+## 5. Fluxos principais
+
+### Criar carrinho: `POST /api/v1/cart`
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant CC as CartController
+    participant CS as CartService
+    participant DB as MongoDB
+    participant PS as ProductService
+    participant R as Redis
+    participant P as Platzi API
+
+    C->>CC: POST {clientId, products[]}
+    CC->>CC: @Valid CartRequest
+    CC->>CS: createCart(request)
+    CS->>DB: findByClientIdAndStatus(clientId, OPEN)
+    alt já existe carrinho aberto
+        CS-->>C: 400 BusinessException
+    end
+    loop para cada item
+        CS->>PS: getProductById(id)
+        PS->>R: cache "product::{id}"
+        alt cache miss
+            PS->>P: GET /products/{id}
+            P-->>PS: produto (ou 400 se não existir)
+            PS->>R: grava (TTL 60s)
+        end
+        PS-->>CS: produto
+    end
+    CS->>CS: Cart.builder()... calculateTotalPrice()
+    CS->>DB: save(cart)
+    CS-->>CC: CartResponse
+    CC-->>C: 201 Created
+```
+
+### Consultar produtos: `GET /api/v1/product` e `/api/v1/product/{id}`
+
+1. `ProductService` é `@Cacheable` (caches `products` e `product`, chave = `id`).
+2. Em cache miss, chama `PlatziStoreClient` (Feign) na URL `expresscart.client.platzi`.
+3. Erros HTTP da Platzi passam pelo `CustomErrorDecoder`:
+   - `400` (a Platzi responde 400 para ID inexistente) → `DataNotFoundException` → **404**.
+   - qualquer outro → `Exception` genérica → **500**.
+4. A lista vazia retorna **204 No Content**.
+
+---
+
+## 6. Contrato HTTP
+
+Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAPI: `/v3/api-docs`.
+
+### Carrinho: `/api/v1/cart`
+
+| Método | Rota | Corpo | Sucesso | Erros |
+|---|---|---|---|---|
+| `POST` | `/api/v1/cart` | `CartRequest` | `201` `CartResponse` | 400 (validação / carrinho aberto duplicado), 404 (produto) |
+| `GET` | `/api/v1/cart/{id}` | n/a | `200` `CartResponse` | 404 (carrinho) |
+| `PUT` | `/api/v1/cart/{id}` | `CartRequest` | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho / produto) |
+| `PUT` | `/api/v1/cart/{id}/payment` | `PaymentRequest` | `200` `PaymentResponse` | 400 (já pago), 404 (carrinho) |
+| `PUT` | `/api/v1/cart/{id}/clear` | n/a | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho) |
+
+### Produto: `/api/v1/product`
+
+| Método | Rota | Sucesso | Erros |
+|---|---|---|---|
+| `GET` | `/api/v1/product` | `200` `PlatziProductResponse[]` ou `204` | 500 |
+| `GET` | `/api/v1/product/{id}` | `200` `PlatziProductResponse` | 404, 500 |
+
+### Exemplos de payload
+
+```jsonc
+// CartRequest (POST e PUT)
+{ "clientId": 1, "products": [ { "id": 3, "quantity": 2 } ] }
+
+// PaymentRequest
+{ "paymentMethod": "PIX" }   // PIX | DEBIT | CREDIT
+
+// CartResponse
+{ "id": "66cd...", "clientId": 1, "totalPrice": 180.00,
+  "products": [ { "id": 3, "title": "...", "price": 90.00, "quantity": 2 } ],
+  "status": "OPEN" }
+
+// PaymentResponse
+{ "id": "66cd...", "status": "SOLD", "paymentMethod": "PIX" }
+```
+
+### Formato dos erros (`config/ControllerAdvice`)
+
+| Exceção | HTTP | Corpo |
+|---|---|---|
+| `MethodArgumentNotValidException` | 400 | `[{ "field": "...", "message": "..." }]` (lista) |
+| `BusinessException` | 400 | `{ "timestamp", "status", "message" }` |
+| `DataNotFoundException` | 404 | idem |
+| `NoHandlerFoundException` (rota inexistente) | 404 | idem |
+| `HttpRequestMethodNotSupportedException` | 405 | idem |
+| Qualquer outra `Exception` | 500 | idem, com mensagem fixa `"Erro interno da aplicação"` |
+
+> Erros de validação e erros genéricos têm **formatos diferentes** (lista × objeto).
+
+---
+
+## 7. Configuração
+
+`src/main/resources/application.yml`:
+
+| Propriedade | Valor | Função |
+|---|---|---|
+| `spring.data.mongodb.host/port/database` | `localhost` / `27017` / `express-cart` | Conexão Mongo |
+| `spring.data.redis.host/port/password` | `localhost` / `6379` / `password` | Conexão Redis |
+| `spring.cache.redis.time-to-live` | `60000` (ms) | TTL do cache de produtos |
+| `spring.mvc.throw-exception-if-no-handler-found` + `spring.web.resources.add-mappings: false` | n/a | Faz rotas inexistentes caírem no `ControllerAdvice` (404 em JSON) |
+| `expresscart.client.platzi` | `https://api.escuelajs.co/api/v1` | URL base do Feign |
+
+Não há perfis (`application-*.yml`) nem variáveis de ambiente: tudo está fixo no arquivo.
+
+### Infra local (`docker-compose.yml`)
+
+- `mongo` (`mongo:4`), porta 27017, volume `mongo-data`.
+- `redis` (`redis`, sem versão), porta 6379, **sem senha** configurada no container (a variável `ALLOW_EMPTY_PASSWORD` só tem efeito em imagens Bitnami).
+
+---
+
+## 8. Testes
+
+Hoje existe apenas `ExpressCartApplicationTests.contextLoads()`. **Não há testes unitários nem de integração** das regras de negócio. Antes de refatorar, o ideal é cobrir o comportamento atual (ver Fase 0 em [REFACTORING.md](REFACTORING.md)).
