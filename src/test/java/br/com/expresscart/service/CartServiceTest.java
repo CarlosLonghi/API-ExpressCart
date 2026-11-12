@@ -158,7 +158,7 @@ class CartServiceTest {
             when(productService.getProductById(2L)).thenReturn(platziProduct(2L, "Novo", "7.00"));
             saveReturnsArgument();
 
-            CartResponse response = cartService.updateCart(CART_ID, cartRequest(CLIENT_ID, item(2L, 3)));
+            CartResponse response = cartService.updateCart(CART_ID, cartUpdateRequest(item(2L, 3)));
 
             assertThat(response.products()).singleElement()
                     .satisfies(p -> assertThat(p.getId()).isEqualTo(2L));
@@ -166,22 +166,23 @@ class CartServiceTest {
         }
 
         @Test
-        void ignoresClientIdFromRequest() {
-            // Invariante I5: clientId do corpo é ignorado
+        void keepsCartOwnerAndStatus() {
+            // Invariante I5: o update só troca os itens
             when(cartRepository.findById(CART_ID)).thenReturn(Optional.of(cart(Status.OPEN)));
             when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "A", "1.00"));
             saveReturnsArgument();
 
-            CartResponse response = cartService.updateCart(CART_ID, cartRequest(999L, item(1L, 1)));
+            CartResponse response = cartService.updateCart(CART_ID, cartUpdateRequest(item(1L, 1)));
 
             assertThat(response.clientId()).isEqualTo(CLIENT_ID);
+            assertThat(response.status()).isEqualTo(Status.OPEN);
         }
 
         @Test
         void rejectsSoldCart() {
             when(cartRepository.findById(CART_ID)).thenReturn(Optional.of(cart(Status.SOLD)));
 
-            assertThatThrownBy(() -> cartService.updateCart(CART_ID, cartRequest(CLIENT_ID, item(1L, 1))))
+            assertThatThrownBy(() -> cartService.updateCart(CART_ID, cartUpdateRequest(item(1L, 1))))
                     .isInstanceOf(BusinessException.class)
                     .hasMessage("Não é possivel alterar os dados de um carrinho já vendido.");
 
@@ -192,7 +193,7 @@ class CartServiceTest {
         void throwsNotFoundWhenMissing() {
             when(cartRepository.findById(CART_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> cartService.updateCart(CART_ID, cartRequest(CLIENT_ID, item(1L, 1))))
+            assertThatThrownBy(() -> cartService.updateCart(CART_ID, cartUpdateRequest(item(1L, 1))))
                     .isInstanceOf(DataNotFoundException.class)
                     .hasMessage("Carrinho não encontrado.");
         }
@@ -212,18 +213,6 @@ class CartServiceTest {
             assertThat(response.id()).isEqualTo(CART_ID);
             assertThat(response.status()).isEqualTo(Status.SOLD);
             assertThat(response.paymentMethod()).isEqualTo(PaymentMethod.PIX);
-        }
-
-        @Test
-        void acceptsNullPaymentMethod() {
-            // B3: sem @Valid no controller, o carrinho vira SOLD sem método de pagamento
-            when(cartRepository.findById(CART_ID)).thenReturn(Optional.of(cart(Status.OPEN)));
-            saveReturnsArgument();
-
-            PaymentResponse response = cartService.payCart(CART_ID, new PaymentRequest(null));
-
-            assertThat(response.status()).isEqualTo(Status.SOLD);
-            assertThat(response.paymentMethod()).isNull();
         }
 
         @Test

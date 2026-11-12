@@ -3,6 +3,7 @@ package br.com.expresscart.support;
 import br.com.expresscart.client.response.PlatziCategoryResponse;
 import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.request.CartRequest;
+import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.ProductRequest;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.Product;
@@ -36,6 +37,10 @@ public final class TestFixtures {
 
     public static CartRequest cartRequest(Long clientId, ProductRequest... items) {
         return new CartRequest(clientId, List.of(items));
+    }
+
+    public static CartUpdateRequest cartUpdateRequest(ProductRequest... items) {
+        return new CartUpdateRequest(List.of(items));
     }
 
     public static Product cartItem(Long id, String title, String price, Integer quantity) {

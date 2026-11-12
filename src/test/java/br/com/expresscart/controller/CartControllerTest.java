@@ -2,7 +2,6 @@ package br.com.expresscart.controller;
 
 import br.com.expresscart.client.PlatziStoreClient;
 import br.com.expresscart.controller.request.CartRequest;
-import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
 import br.com.expresscart.entity.PaymentMethod;
@@ -79,14 +78,13 @@ class CartControllerTest {
     }
 
     @Test
-    void create_clientIdMinMessageSaysZero() throws Exception {
-        // B8: @Min(1) com mensagem "menor que 0"
+    void create_clientIdMustBePositive() throws Exception {
         mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
                         {"clientId": 0, "products": []}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$[0].field").value("clientId"))
-                .andExpect(jsonPath("$[0].message").value("O ID do cliente não pode ser menor que 0"));
+                .andExpect(jsonPath("$[0].message").value("O ID do cliente deve ser maior que 0"));
     }
 
     @Test
@@ -157,16 +155,37 @@ class CartControllerTest {
     }
 
     @Test
-    void update_skipsBeanValidation() throws Exception {
-        // B3: sem @Valid, quantidade 0 e clientId nulo chegam ao service
+    void update_acceptsBodyWithoutClientIdAndIgnoresExtraFields() throws Exception {
         when(cartService.updateCart(eq(CART_ID), any())).thenReturn(openCartResponse());
 
         mockMvc.perform(put(BASE + "/{id}", CART_ID).contentType(MediaType.APPLICATION_JSON).content("""
-                        {"clientId": null, "products": [{"id": 1, "quantity": 0}]}
+                        {"products": [{"id": 1, "quantity": 2}]}
                         """))
                 .andExpect(status().isOk());
 
-        verify(cartService).updateCart(eq(CART_ID), any(CartRequest.class));
+        verify(cartService).updateCart(CART_ID, cartUpdateRequest(item(1L, 2)));
+    }
+
+    @Test
+    void update_validationErrorsComeAsFieldList() throws Exception {
+        mockMvc.perform(put(BASE + "/{id}", CART_ID).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"products": [{"id": 1, "quantity": 0}, {"id": null, "quantity": 101}]}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[*].field", containsInAnyOrder(
+                        "products[0].quantity", "products[1].id", "products[1].quantity")));
+
+        verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void update_missingProductsIsRejected() throws Exception {
+        mockMvc.perform(put(BASE + "/{id}", CART_ID).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("products"))
+                .andExpect(jsonPath("$[0].message").value("Informe a lista de Produtos do carrinho"));
+
+        verifyNoInteractions(cartService);
     }
 
     // ---------- PUT /cart/{id}/payment ----------
@@ -186,15 +205,14 @@ class CartControllerTest {
     }
 
     @Test
-    void pay_nullPaymentMethodIsNotValidated() throws Exception {
-        // B3: sem @Valid, paymentMethod nulo chega ao service
-        when(cartService.payCart(eq(CART_ID), any()))
-                .thenReturn(new PaymentResponse(CART_ID, Status.SOLD, null));
-
+    void pay_missingPaymentMethodIsRejected() throws Exception {
         mockMvc.perform(put(BASE + "/{id}/payment", CART_ID).contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("paymentMethod"))
+                .andExpect(jsonPath("$[0].message")
+                        .value("Informe o método de pagamento para o carrinho (PIX / CREDIT / DEBIT)"));
 
-        verify(cartService).payCart(CART_ID, new PaymentRequest(null));
+        verifyNoInteractions(cartService);
     }
 
     @Test

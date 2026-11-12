@@ -2,7 +2,9 @@ package br.com.expresscart.service;
 
 import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.request.CartRequest;
+import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.PaymentRequest;
+import br.com.expresscart.controller.request.ProductRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
 import br.com.expresscart.entity.Cart;
@@ -31,7 +33,7 @@ public class CartService {
                     );
                 });
 
-        List<Product> productList = buildProductListFromRequest(cartRequest);
+        List<Product> productList = buildProductList(cartRequest.products());
 
         Cart cart = Cart.builder()
                 .clientId(cartRequest.clientId())
@@ -49,14 +51,14 @@ public class CartService {
         return new CartResponse(cart);
     }
 
-    public CartResponse updateCart(String cartId, CartRequest cartRequest) {
+    public CartResponse updateCart(String cartId, CartUpdateRequest cartRequest) {
         Cart cart = getCartById(cartId);
 
         if (cart.getStatus().equals(Status.SOLD)) {
             throw new BusinessException("Não é possivel alterar os dados de um carrinho já vendido.");
         }
 
-        List<Product> productList = buildProductListFromRequest(cartRequest);
+        List<Product> productList = buildProductList(cartRequest.products());
 
         cart.setProducts(productList);
         cart.calculateTotalPrice();
@@ -94,8 +96,8 @@ public class CartService {
         return new CartResponse(cleanCart);
     }
 
-    private List<Product> buildProductListFromRequest(CartRequest cartRequest) {
-        return cartRequest.products().stream()
+    private List<Product> buildProductList(List<ProductRequest> productRequests) {
+        return productRequests.stream()
                 .map(productRequest -> {
                     PlatziProductResponse productResponse = productService.getProductById(productRequest.id());
                     return Product.builder()
