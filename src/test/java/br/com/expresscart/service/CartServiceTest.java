@@ -96,18 +96,6 @@ class CartServiceTest {
 
             verify(cartRepository, never()).save(any());
         }
-
-        @Test
-        void allowsEmptyProductList() {
-            // B8: @NotNull aceita lista vazia
-            when(cartRepository.findByClientIdAndStatus(CLIENT_ID, Status.OPEN)).thenReturn(Optional.empty());
-            saveReturnsArgument();
-
-            CartResponse response = cartService.createCart(cartRequest(CLIENT_ID));
-
-            assertThat(response.products()).isEmpty();
-            assertThat(response.totalPrice()).isEqualByComparingTo("0");
-        }
     }
 
     @Nested

@@ -194,6 +194,24 @@ class CartIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void cartCannotBeCreatedEmpty_butCanBeEmptiedByUpdate() throws Exception {
+        createCart(1, "[]")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("products"));
+        assertThat(cartRepository.count()).isZero();
+
+        stubProduct(1, "Camiseta", "10.00");
+        String id = createCartAndGetId(1, "[{\"id\": 1, \"quantity\": 1}]");
+
+        mockMvc.perform(put(BASE + "/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"products\": []}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.products").isEmpty())
+                .andExpect(jsonPath("$.totalPrice").value(0))
+                .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
     void getUnknownCartReturns404() throws Exception {
         mockMvc.perform(get(BASE + "/{id}", "000000000000000000000000"))
                 .andExpect(status().isNotFound())
