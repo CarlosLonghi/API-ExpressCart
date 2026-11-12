@@ -53,10 +53,10 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Era:** o `CartService` repetia a checagem de `SOLD` em `updateCart`, `payCart` e `clearCart`, alterava o carrinho por setters e precisava lembrar de recalcular o total.
 - **Correção:** a entidade `Cart` só muda por `Cart.open(...)`, `replaceItems(...)`, `clear()` e `pay(...)`. Cada método valida o estado e recalcula o total. Não há mais setters nem builder. O `CartService` só carrega, chama a entidade e salva.
 
-### 🟠 A2. DTOs vazam entidades e modelos externos
-- `CartResponse` expõe `entity.Product` e `entity.Status` diretamente.
-- `ProductController` devolve `PlatziProductResponse`, o DTO **do cliente externo**. Se a Platzi mudar o contrato, a API do Express Cart muda junto.
-- **Sugestão:** criar `ProductResponse` / `CartItemResponse` próprios e um mapper (manual ou MapStruct). O pacote `client` só deve ser usado pelo `ProductService`.
+### ✅ A2. DTOs vazavam entidades e modelos externos (corrigido)
+- **Era:** `CartResponse` expunha `entity.Product`, e `ProductController` devolvia `PlatziProductResponse`, o DTO do cliente externo. Uma mudança na Platzi ou no documento do Mongo mudaria a API sem ninguém perceber.
+- **Correção:** respostas próprias (`ProductResponse`, `CategoryResponse`, `CartItemResponse`). O `ProductService` converte o modelo da Platzi, e o pacote `client` só é usado por ele. O JSON das respostas não mudou.
+- **Mantido:** os enums `Status` e `PaymentMethod` continuam sendo os da entidade. São vocabulário do domínio, e duplicá-los só criaria conversões sem ganho.
 
 ### 🟡 A3. Pacotes e nomes
 - `exception.handler` contém exceções, não handlers. O handler real (`ControllerAdvice`) está em `config`.
@@ -65,8 +65,8 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 
 ### 🟡 A4. Configuração de cache
 - `@EnableCaching` está em `ProductService`. Deveria ficar numa classe `@Configuration` (`CacheConfig`).
-- Não há `RedisCacheConfiguration`, então o cache usa **serialização Java** (por isso `PlatziProductResponse implements Serializable`). JSON (`GenericJackson2JsonRedisSerializer`) é mais legível e não quebra quando a classe muda.
-- O mesmo TTL (60s) vale para os caches `products` e `product`. Dá para configurar por cache.
+- Não há `RedisCacheConfiguration`, então o cache usa **serialização Java** (por isso `ProductResponse` e `CategoryResponse` implementam `Serializable`). JSON (`GenericJackson2JsonRedisSerializer`) é mais legível e não quebra quando a classe muda.
+- O mesmo TTL (60s) vale para os caches `catalog-products` e `catalog-product`. Dá para configurar por cache.
 - `@Cacheable` em método que retorna `Optional` funciona (o Spring desembrulha o valor), mas soma com B1. Rever junto.
 
 ### 🟡 A5. HTTP / semântica REST
@@ -86,7 +86,7 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 
 | Endpoint | Problema |
 |---|---|
-| `GET /cart/{id}` | Schema do 200 ainda aponta para `Cart.class` (TODO antigo), mas o retorno é `CartResponse` |
+| `GET /cart/{id}` | ✅ schema do 200 corrigido para `CartResponse` |
 | `PUT /cart/{id}` | ✅ corrigido junto com B3 |
 | `POST` / `PUT` | Exemplo de validação usa o campo `email`, que não existe |
 | `POST` | Mensagem documentada difere da real (`"...para o cliente de id: X"`) |

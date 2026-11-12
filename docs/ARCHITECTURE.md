@@ -58,9 +58,9 @@ flowchart TD
 | `controller` | Endpoints REST. Delegam tudo para os services. | `CartController`, `ProductController` |
 | `controller.api.docs` | Interfaces só com anotações OpenAPI/Swagger. Os controllers as implementam para manter a documentação fora do código dos endpoints. | `CartApi`, `ProductApi` |
 | `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `CartUpdateRequest`, `ProductRequest`, `PaymentRequest` |
-| `controller.response` | DTOs de saída do carrinho. | `CartResponse`, `PaymentResponse` |
+| `controller.response` | DTOs de saída. Nenhuma resposta expõe a entidade nem o modelo da Platzi. | `CartResponse`, `CartItemResponse`, `PaymentResponse`, `ProductResponse`, `CategoryResponse` |
 | `service` | Orquestração dos casos de uso do carrinho (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
-| `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
+| `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. Só o `ProductService` usa este pacote. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
 | `repository` | Acesso ao MongoDB. | `CartRepository` |
 | `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
 | `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
@@ -151,7 +151,7 @@ sequenceDiagram
     end
     loop para cada item
         CS->>PS: getProductById(id)
-        PS->>R: cache "product::{id}"
+        PS->>R: cache "catalog-product::{id}"
         alt cache miss
             PS->>P: GET /products/{id}
             P-->>PS: produto (400 se não existir → 404)
@@ -167,7 +167,7 @@ sequenceDiagram
 
 ### Consultar produtos: `GET /api/v1/product` e `/api/v1/product/{id}`
 
-1. `ProductService` é `@Cacheable` (caches `products` e `product`, chave = `id`).
+1. `ProductService` é `@Cacheable` (caches `catalog-products` e `catalog-product`, chave = `id`). O valor em cache é o `ProductResponse`, já convertido.
 2. Em cache miss, chama `PlatziStoreClient` (Feign) na URL `expresscart.client.platzi`.
 3. O `ProductService` traduz os erros do Feign:
    - `400` (a Platzi responde 400 para ID inexistente) → `DataNotFoundException` → **404** com o id na mensagem.
@@ -194,8 +194,8 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 
 | Método | Rota | Sucesso | Erros |
 |---|---|---|---|
-| `GET` | `/api/v1/product` | `200` `PlatziProductResponse[]` ou `204` | 502 |
-| `GET` | `/api/v1/product/{id}` | `200` `PlatziProductResponse` | 404, 502 |
+| `GET` | `/api/v1/product` | `200` `ProductResponse[]` ou `204` | 502 |
+| `GET` | `/api/v1/product/{id}` | `200` `ProductResponse` | 404, 502 |
 
 ### Exemplos de payload
 

@@ -10,7 +10,9 @@ MongoDB document in the `carts` collection. `id` (ObjectId string), `clientId` (
 ### Product / item (Produto / item do carrinho)
 Two different things share the name:
 - **`entity.Product`**: a cart line embedded in `Cart`: `id`, `title`, `price`, `quantity`. Snapshot of the catalog at the time it was added (see invariant I4).
-- **`client.response.PlatziProductResponse`**: the catalog product as returned by Platzi: `id`, `title`, `price`, `images`, `category` (`PlatziCategoryResponse`). Currently also exposed by `GET /api/v1/product`.
+- **`client.response.PlatziProductResponse`**: the catalog product as returned by Platzi. Internal to `ProductService`.
+- **`controller.response.ProductResponse`**: the catalog product as this API exposes it (`id`, `title`, `price`, `images`, `category`). What `GET /api/v1/product` returns and what is cached.
+- **`controller.response.CartItemResponse`**: `entity.Product` as returned inside `CartResponse.products`.
 
 ### Status
 `OPEN` (aberto, editable) → `SOLD` (vendido/pago, terminal). Only `PUT /cart/{id}/payment` moves to `SOLD`.
@@ -27,7 +29,7 @@ Only exists as `clientId` on the cart. "Client" also appears as the Feign **HTTP
 `https://api.escuelajs.co/api/v1` (`expresscart.client.platzi`). Public, rate-unknown, data may be reset by its maintainers. Returns **400** (not 404) for an unknown product id. Never call it from tests; use WireMock.
 
 ### Redis
-Cache only (`products`, `product::{id}`), TTL 60 s, JDK serialization.
+Cache only (`catalog-products`, `catalog-product::{id}`), TTL 60 s, JDK serialization of `ProductResponse`.
 
 ### MongoDB
 Database `express-cart`, single collection `carts`.
