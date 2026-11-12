@@ -10,6 +10,7 @@ Um serviço simples e eficiente de gerenciamento de carrinho de compras, constru
 - [📐 Arquitetura do Projeto](#-arquitetura-do-projeto)
 - [🚀 Como Rodar o Projeto](#-como-rodar-o-projeto)
 - [📚 Documentação da API](#-documentação-da-api)
+- [🧭 Documentação Técnica](#-documentação-técnica)
 
 ---
 
@@ -30,7 +31,7 @@ O sistema foi projetado para **alta performance e escalabilidade**, combinando a
 ---
 
 ## 🛠 Tecnologias Utilizadas
-- **Java 17** → Linguagem moderna e performática.  
+- **Java 21** + **Spring Boot 3.5** → Linguagem e framework base da aplicação.  
   👉 [Documentação oficial](https://docs.oracle.com/en/java/)
 
 - **Lombok** → Elimina código boilerplate, como getters, setters e construtores.  
@@ -48,7 +49,10 @@ O sistema foi projetado para **alta performance e escalabilidade**, combinando a
 - **Docker** → Containerização para um deploy simples e consistente.  
   👉 [Documentação oficial](https://docs.docker.com/)
 
-- **API Externa** → Fonte de dados de produtos.
+- **springdoc-openapi (Swagger)** → Documentação interativa da API.  
+  👉 [Documentação oficial](https://springdoc.org/)
+
+- **API Externa** → [Platzi Fake Store API](https://fakeapi.platzi.com/), fonte de dados de produtos.
 
 ---
 
@@ -76,7 +80,8 @@ src/
  │   │       │
  │   │       ├── config/
  │   │       │   ├── ControllerAdvice
- │   │       │   └── CustomErrorDecoder
+ │   │       │   ├── CustomErrorDecoder
+ │   │       │   └── OpenApiConfig
  │   │       │
  │   │       ├── controller/
  │   │       │   ├── api/docs/
@@ -86,6 +91,9 @@ src/
  │   │       │   │   ├── CartRequest
  │   │       │   │   ├── PaymentRequest
  │   │       │   │   └── ProductRequest
+ │   │       │   ├── response/
+ │   │       │   │   ├── CartResponse
+ │   │       │   │   └── PaymentResponse
  │   │       │   ├── CartController
  │   │       │   └── ProductController
  │   │       │
@@ -113,14 +121,15 @@ src/
  │   │       └── ExpressCartApplication
  │   │
  │   └── resources/
- │       ├── application.yml
- │       └── (outros arquivos de configuração, mapeamentos, etc.)
+ │       └── application.yml
  │
  └── test/
      └── java/
          └── br/com/expresscart/
-             └── (testes unitários e de integração)
+             └── ExpressCartApplicationTests
 ```
+
+> Detalhes de camadas, fluxos e regras de negócio em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -128,7 +137,7 @@ src/
 
 ### 🔧 Pré-requisitos
 - **Docker** (ou instâncias locais de Redis e MongoDB)
-- **Java 17+**
+- **Java 21+**
 - **Maven** (ou utilize `mvnw`)
 
 ### ▶️ Rodando a aplicação
@@ -162,4 +171,10 @@ Ela permite que você **visualize e teste todos os endpoints disponíveis**.
 ### O que você pode fazer na documentação
 - **Visualizar Endpoints:** Veja todos os endpoints da API, com seus métodos (GET, POST, PUT, DELETE), parâmetros e descrições.
 - **Testar Requisições:** Use a funcionalidade *Try it out* para enviar requisições e ver as respostas em tempo real.
-- **Consultar Schemas:** Entenda a estrutura das entidades (DTOs) utilizadas nas requisições e respostas.  
+- **Consultar Schemas:** Entenda a estrutura das entidades (DTOs) utilizadas nas requisições e respostas.
+
+---
+
+## 🧭 Documentação Técnica
+- [**Arquitetura**](docs/ARCHITECTURE.md): camadas, modelo de dados, máquina de estados do carrinho, regras de negócio, fluxos, contrato HTTP, formato de erros e configuração.
+- [**Diagnóstico e Plano de Refatoração**](docs/REFACTORING.md): bugs conhecidos, dívidas técnicas e plano de refatoração em fases.
