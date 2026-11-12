@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static br.com.expresscart.support.TestFixtures.platziProduct;
+import static br.com.expresscart.support.TestFixtures.productResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -38,9 +38,8 @@ class ProductControllerTest {
     private PlatziStoreClient platziStoreClient;
 
     @Test
-    void list_returns200WithExternalProductShape() throws Exception {
-        // A2: expõe o DTO do cliente externo (inclui images e category)
-        when(productService.getAllProducts()).thenReturn(List.of(platziProduct(1L, "Camiseta", "10.50")));
+    void list_returns200WithProducts() throws Exception {
+        when(productService.getAllProducts()).thenReturn(List.of(productResponse(1L, "Camiseta", "10.50")));
 
         mockMvc.perform(get(BASE))
                 .andExpect(status().isOk())
@@ -62,7 +61,7 @@ class ProductControllerTest {
 
     @Test
     void getById_returns200() throws Exception {
-        when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "Camiseta", "10.50"));
+        when(productService.getProductById(1L)).thenReturn(productResponse(1L, "Camiseta", "10.50"));
 
         mockMvc.perform(get(BASE + "/{id}", 1))
                 .andExpect(status().isOk())

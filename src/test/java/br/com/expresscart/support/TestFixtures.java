@@ -5,6 +5,8 @@ import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.request.CartRequest;
 import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.ProductRequest;
+import br.com.expresscart.controller.response.CategoryResponse;
+import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.PaymentMethod;
 import br.com.expresscart.entity.Product;
@@ -30,6 +32,16 @@ public final class TestFixtures {
                 new BigDecimal(price),
                 List.of("https://placehold.co/600x400"),
                 new PlatziCategoryResponse(1L, "Demo Category", "https://placehold.co/640x480")
+        );
+    }
+
+    public static ProductResponse productResponse(Long id, String title, String price) {
+        return new ProductResponse(
+                id,
+                title,
+                new BigDecimal(price),
+                List.of("https://placehold.co/600x400"),
+                new CategoryResponse(1L, "Demo Category", "https://placehold.co/640x480")
         );
     }
 

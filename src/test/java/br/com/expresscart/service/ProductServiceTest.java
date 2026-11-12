@@ -2,6 +2,8 @@ package br.com.expresscart.service;
 
 import br.com.expresscart.client.PlatziStoreClient;
 import br.com.expresscart.client.response.PlatziProductResponse;
+import br.com.expresscart.controller.response.CategoryResponse;
+import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.exception.handler.DataNotFoundException;
 import br.com.expresscart.exception.handler.ExternalServiceException;
 import feign.FeignException;
@@ -13,11 +15,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 import static br.com.expresscart.support.TestFixtures.platziProduct;
+import static br.com.expresscart.support.TestFixtures.productResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -41,10 +49,11 @@ class ProductServiceTest {
 
     @Test
     void getAllProducts_delegatesToClient() {
-        List<PlatziProductResponse> products = List.of(platziProduct(1L, "A", "1.00"));
-        when(platziStoreClient.getAllProducts()).thenReturn(products);
+        when(platziStoreClient.getAllProducts())
+                .thenReturn(List.of(platziProduct(1L, "A", "1.00"), platziProduct(2L, "B", "2.00")));
 
-        assertThat(productService.getAllProducts()).isEqualTo(products);
+        assertThat(productService.getAllProducts())
+                .containsExactly(productResponse(1L, "A", "1.00"), productResponse(2L, "B", "2.00"));
     }
 
     @Test
@@ -60,10 +69,37 @@ class ProductServiceTest {
 
     @Test
     void getProductById_returnsProduct() {
-        PlatziProductResponse product = platziProduct(1L, "A", "1.00");
-        when(platziStoreClient.getProductById(1L)).thenReturn(product);
+        when(platziStoreClient.getProductById(1L)).thenReturn(platziProduct(1L, "A", "1.00"));
 
-        assertThat(productService.getProductById(1L)).isEqualTo(product);
+        ProductResponse product = productService.getProductById(1L);
+
+        assertThat(product).isEqualTo(productResponse(1L, "A", "1.00"));
+        assertThat(product.category()).isEqualTo(new CategoryResponse(1L, "Demo Category", "https://placehold.co/640x480"));
+    }
+
+    @Test
+    void getProductById_toleratesMissingImagesAndCategory() {
+        when(platziStoreClient.getProductById(1L))
+                .thenReturn(new PlatziProductResponse(1L, "A", new BigDecimal("1.00"), null, null));
+
+        ProductResponse product = productService.getProductById(1L);
+
+        assertThat(product.images()).isEmpty();
+        assertThat(product.category()).isNull();
+    }
+
+    @Test
+    void returnedProductsAreSerializableForTheRedisCache() throws Exception {
+        when(platziStoreClient.getAllProducts()).thenReturn(List.of(platziProduct(1L, "A", "1.00")));
+        List<ProductResponse> products = productService.getAllProducts();
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
+            out.writeObject(products);
+        }
+        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+            assertThat(in.readObject()).isEqualTo(products);
+        }
     }
 
     @Test
