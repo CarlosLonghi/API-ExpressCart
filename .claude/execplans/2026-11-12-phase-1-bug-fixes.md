@@ -1,7 +1,7 @@
 # ExecPlan: Phase 1, bug fixes without redesign
 
 **Date**: 2026-11-12
-**Status**: In Progress
+**Status**: Complete (pending merge of the three PRs)
 **Covers**: B1, B2, B3, B4, B5, B8 (`docs/REFACTORING.md`)
 
 ## Goal
@@ -27,8 +27,8 @@ Delivered as three stacked PRs, one per scope:
 
 - [x] PR 1: remove `CustomErrorDecoder`; `ProductService` translates Feign errors; 502 for upstream failures
 - [x] PR 2: `@Valid` on `PUT /cart/{id}` and `PUT /cart/{id}/payment`; `CartUpdateRequest`; fixed `clientId` message
-- [ ] PR 3: 400 for malformed input; log unexpected errors
-- [ ] Docs updated per PR (`docs/REFACTORING.md`, `docs/ARCHITECTURE.md`, `.claude/*`, `CLAUDE.md`)
+- [x] PR 3: 400 for malformed input, 415 for wrong media type; unexpected errors logged; `Optional.ofNullable`
+- [x] Docs updated per PR (`docs/REFACTORING.md`, `docs/ARCHITECTURE.md`, `.claude/*`, `CLAUDE.md`)
 
 ## Surprises & Discoveries
 
@@ -45,6 +45,9 @@ Delivered as three stacked PRs, one per scope:
 | 2026-11-12 | B3: new `CartUpdateRequest` (items only) instead of `@Valid CartRequest` on PUT | Validating `CartRequest` would make `clientId` mandatory on update even though it is ignored, breaking clients that never sent it. Clients that do send it keep working because unknown JSON properties are ignored. |
 | 2026-11-12 | Empty `products` list still accepted on create and update | An empty cart is already a valid state (`clear` produces it). Requiring one item on create is a product decision, left open in `docs/REFACTORING.md` B8. |
 | 2026-11-12 | Removed the service-level test for null `paymentMethod` | The boundary now rejects it; the service has no guard of its own. Phase 2 (A1) moves the rule into `Cart.pay`. |
+| 2026-11-12 | One generic message for every unreadable body, instead of parsing Jackson's exception to name the field | Jackson's messages expose class names and are in English; extracting field paths reliably means handling several exception subtypes. Phase 4 (`ProblemDetail`) is the place to make these errors richer. |
+| 2026-11-12 | The 415 message does not echo the received `Content-Type` | It may be null and may carry parameters (`;charset=UTF-8`); the fix for the client is the same either way. |
+| 2026-11-12 | B5 is asserted through `OutputCaptureExtension` | Logging was untestable in Phase 0 because there was nothing to observe; capturing stdout makes "the stack trace is logged and not returned" a pinned behavior. |
 
 ## Context & Orientation
 
@@ -61,8 +64,10 @@ Delivered as three stacked PRs, one per scope:
 
 - [x] PR 1: unknown product → 404 with id (create cart, update cart, `GET /product/{id}`); Platzi 5xx / connection reset → 502; failed lookups not cached; cart not saved when a lookup fails
 - [x] PR 2: invalid body on PUT endpoints → 400 with field list; cart untouched after a rejected update/payment
-- [ ] PR 3: malformed JSON, unknown enum value, non-numeric id → 400
+- [x] PR 3: malformed JSON, unknown enum value, wrong field type, non-numeric id → 400; non-JSON content type → 415; 500 logs the stack trace and does not leak it
 
 ## Outcomes & Retrospective
 
-**What shipped**: (fill in when the three PRs are merged)
+**What shipped**: B1-B5 fixed; from B8, the `clientId` message and `Optional.ofNullable`. 75 tests, 99.3% instructions / 100% branches.
+**What we learned**: several source files are stored with CRLF line endings and there is no `* text=auto` in `.gitattributes`; scripted edits must preserve each file's endings or the diff shows the whole file as rewritten (happened once in PR 1 and was fixed with a follow-up commit).
+**What's left**: B8 leftovers move to Phase 2 with the domain work: duplicated product ids, null-safe `calculateTotalPrice`, whether an empty cart can be created. The Phase 0 ExecPlan's bug → test map is now historical (those tests were flipped or removed here). Swagger examples for the new 400/415 responses belong to Phase 4.

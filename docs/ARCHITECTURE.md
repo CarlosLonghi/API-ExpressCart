@@ -214,12 +214,15 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 | Exceção | HTTP | Corpo |
 |---|---|---|
 | `MethodArgumentNotValidException` | 400 | `[{ "field": "...", "message": "..." }]` (lista) |
+| `HttpMessageNotReadableException` (JSON inválido, enum ou tipo errado) | 400 | `{ "timestamp", "status", "message" }` |
+| `MethodArgumentTypeMismatchException` (ex.: id não numérico na URL) | 400 | idem |
+| `HttpMediaTypeNotSupportedException` | 415 | idem |
 | `BusinessException` | 400 | `{ "timestamp", "status", "message" }` |
 | `DataNotFoundException` | 404 | idem |
 | `NoHandlerFoundException` (rota inexistente) | 404 | idem |
 | `ExternalServiceException` (falha na Platzi) | 502 | idem |
 | `HttpRequestMethodNotSupportedException` | 405 | idem |
-| Qualquer outra `Exception` | 500 | idem, com mensagem fixa `"Erro interno da aplicação"` |
+| Qualquer outra `Exception` | 500 | idem, com mensagem fixa `"Erro interno da aplicação"`. A exceção vai para o log |
 
 > Erros de validação e erros genéricos têm **formatos diferentes** (lista × objeto).
 

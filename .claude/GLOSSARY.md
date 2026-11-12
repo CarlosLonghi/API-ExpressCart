@@ -40,6 +40,9 @@ Database `express-cart`, single collection `carts`.
 | `DataNotFoundException` | 404 | `"Carrinho não encontrado."`, `"Produto não encontrado: id=X"` |
 | `ExternalServiceException` | 502 | `"Erro ao consultar o catálogo de produtos (Platzi)"` |
 | `MethodArgumentNotValidException` | 400 | list of `{field, message}` from the Bean Validation messages in `controller/request/*` |
+| `HttpMessageNotReadableException` | 400 | `"Corpo da requisição inválido: verifique o JSON e os valores permitidos em cada campo"` |
+| `MethodArgumentTypeMismatchException` | 400 | `"Valor inválido para o parâmetro 'id': abc"` |
+| `HttpMediaTypeNotSupportedException` | 415 | `"Content-Type não suportado. Use application/json"` |
 
 ## Quick lookups
 
