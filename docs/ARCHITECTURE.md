@@ -243,4 +243,13 @@ Não há perfis (`application-*.yml`) nem variáveis de ambiente: tudo está fix
 
 ## 8. Testes
 
-Hoje existe apenas `ExpressCartApplicationTests.contextLoads()`. **Não há testes unitários nem de integração** das regras de negócio. Antes de refatorar, o ideal é cobrir o comportamento atual (ver Fase 0 em [REFACTORING.md](REFACTORING.md)).
+```bash
+bash ./mvnw test      # unitários + integração (precisa do Docker rodando)
+bash ./mvnw verify    # idem + relatório de cobertura em target/site/jacoco/index.html
+```
+
+- **Unitários** (`entity/`, `service/`, `config/`): JUnit 5 + Mockito.
+- **Slice web** (`controller/`): `@WebMvcTest`, cobre status HTTP, validação e formato dos erros.
+- **Integração** (`integration/`): aplicação completa com MongoDB e Redis reais (Testcontainers) e a API da Platzi simulada com WireMock. Não dependem do `docker-compose` nem de internet.
+
+Os testes são de **caracterização**: registram o comportamento atual, incluindo os bugs listados em [REFACTORING.md](REFACTORING.md).

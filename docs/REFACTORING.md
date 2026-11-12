@@ -33,9 +33,9 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Problema:** qualquer erro inesperado vira 500 **sem stack trace no log**, o que impede o diagnóstico.
 - **Sugestão:** `log.error("...", exception)` no handler genérico.
 
-### 🟠 B6. Senha do Redis não bate com o docker-compose (verificar)
+### 🟡 B6. Senha do Redis não bate com o docker-compose (verificado: funciona)
 - **Onde:** `application.yml` (`spring.data.redis.password: password`) × `docker-compose.yml`
-- **Problema:** o container Redis oficial sobe **sem senha**, e `ALLOW_EMPTY_PASSWORD` só é lida por imagens Bitnami. Mandar `AUTH` para um Redis sem senha costuma gerar erro de conexão, que só aparece na primeira chamada que usa o cache.
+- **Problema:** o container Redis oficial sobe **sem senha**, e `ALLOW_EMPTY_PASSWORD` só é lida por imagens Bitnami. **Não quebra a aplicação:** o Lettuce autentica com `HELLO ... AUTH default <senha>`, que um Redis sem senha aceita. Os testes de integração rodam com essa mesma combinação e o cache funciona. É só uma configuração enganosa: parece haver senha, mas não há.
 - **Sugestão:** alinhar os dois arquivos (ex.: `command: redis-server --requirepass ${REDIS_PASSWORD}`) e ler a senha de variável de ambiente.
 
 ### 🟠 B7. Condição de corrida em "um carrinho aberto por cliente"
@@ -118,13 +118,21 @@ Textos com acentuação inconsistente ("possivel" × "possível").
 
 ## 5. Testes
 
-🟠 **Não há testes de comportamento.** O único teste (`contextLoads`) só sobe o contexto. Refatorar sem testes aumenta muito o risco de regressão.
+✅ **Fase 0 concluída.** A suíte de caracterização tem 71 testes (58 unitários/slice e 13 de integração) e cobre 99% das instruções e 100% dos branches. Ela registra o comportamento atual, **incluindo os bugs**: cada teste que fixa um bug tem o id no comentário (`// B3: ...`).
 
-**Cobertura mínima sugerida:**
-- `CartServiceTest` (unitário, Mockito): R1–R5 de [ARCHITECTURE.md §4](ARCHITECTURE.md#4-regras-de-negócio-cartservice), cálculo do total, produto inexistente.
-- `CartTest` (unitário): `calculateTotalPrice` e, depois de A1, as transições de estado.
-- `CartControllerTest` (`@WebMvcTest`): status HTTP, validações e formato dos erros.
-- Integração com **Testcontainers** (Mongo + Redis) e **WireMock** para a Platzi.
+| Tipo | Classes | Infra |
+|---|---|---|
+| Unitário | `CartTest`, `CartServiceTest`, `ProductServiceTest`, `CustomErrorDecoderTest` | nenhuma |
+| Slice web (`@WebMvcTest`) | `CartControllerTest`, `ProductControllerTest` | nenhuma |
+| Integração | `CartIntegrationTest`, `ProductIntegrationTest`, `ExpressCartApplicationTests` | Docker (Testcontainers: Mongo + Redis) e WireMock no lugar da Platzi |
+
+**Ao corrigir um bug:** altere o teste correspondente no mesmo commit. A tabela bug → testes está no ExecPlan [`.claude/execplans/2026-11-12-phase-0-characterization-tests.md`](../.claude/execplans/2026-11-12-phase-0-characterization-tests.md).
+
+**Ainda sem teste:** B5 (falta de log, sem efeito observável) e B7 (corrida, precisa de teste de concorrência junto com a correção).
+
+**Pendências de build encontradas na Fase 0:**
+- O `mvnw` não é executável no git (`./mvnw` → *Permission denied*). Use `bash ./mvnw` até corrigir o modo do arquivo.
+- O JaCoCo só gera relatório. Falta decidir se haverá cobertura mínima obrigatória no `verify`.
 
 ---
 
@@ -134,12 +142,12 @@ Cada fase pode virar um PR pequeno, seguindo o padrão de branches que o reposit
 
 | Fase | Objetivo | Itens |
 |---|---|---|
-| **0. Rede de segurança** | Testes de caracterização do comportamento atual | §5 |
-| **1. Correções** | Corrigir bugs sem mudar o design | B1, B2, B3, B4, B5, B6, B8 |
+| **0. Rede de segurança** ✅ | Testes de caracterização do comportamento atual | §5 |
+| **1. Correções** | Corrigir bugs sem mudar o design | B1, B2, B3, B4, B5, B8 |
 | **2. Domínio** | Comportamento na entidade, DTOs próprios | A1, A2 |
 | **3. Organização** | Pacotes, nomes, config de cache | A3, A4 |
 | **4. API** | Semântica REST, `ProblemDetail`, Swagger atualizado | A5, §3 |
 | **5. Robustez** | Índice único, timeouts/resiliência, config externa | B7, A6 |
-| **6. Infra** | Versões, Dockerfile, compose completo | §4 |
+| **6. Infra** | Versões, Dockerfile, compose completo, senha do Redis | §4, B6 |
 
 > A fase 4 muda o contrato HTTP. Se houver consumidores da API, vale versionar (`/api/v2`) ou anunciar a mudança antes.
