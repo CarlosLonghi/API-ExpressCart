@@ -58,4 +58,5 @@ Database `express-cart`, single collection `carts`.
 | Error → HTTP | `config/ControllerAdvice.java` |
 | Swagger docs per endpoint | `controller/api/docs/CartApi.java`, `ProductApi.java` |
 | Validation messages | `controller/request/*.java` |
+| Custom constraints | `controller/request/validation/` |
 | Bug / debt catalog | `docs/REFACTORING.md` |

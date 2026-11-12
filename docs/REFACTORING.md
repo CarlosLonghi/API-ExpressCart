@@ -42,7 +42,7 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - ✅ `ControllerAdvice.handleNoHandlerFound`: trocado `Optional.of(...)` por `Optional.ofNullable`.
 - ✅ `CartRequest.clientId`: a mensagem do `@Min(1)` dizia *"não pode ser menor que 0"*. Agora diz *"deve ser maior que 0"*.
 - `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. **Mantido por enquanto:** carrinho vazio já é um estado válido (é o resultado do `clear`). Decidir se a criação deve exigir ao menos um item (`@NotEmpty`).
-- Itens com o mesmo `id` repetido no pedido não são agrupados e viram duas linhas no carrinho.
+- ✅ Itens com o mesmo `id` repetido no pedido viravam duas linhas no carrinho. Agora o pedido é recusado com 400 (`@UniqueProductIds`), na criação e na atualização.
 - ✅ `Cart.calculateTotalPrice()` lançava NPE com `products` nulo. O método público não existe mais: o total é calculado dentro da entidade e a lista de itens nunca fica nula.
 
 ---

@@ -57,7 +57,7 @@ flowchart TD
 |---|---|---|
 | `controller` | Endpoints REST. Delegam tudo para os services. | `CartController`, `ProductController` |
 | `controller.api.docs` | Interfaces só com anotações OpenAPI/Swagger. Os controllers as implementam para manter a documentação fora do código dos endpoints. | `CartApi`, `ProductApi` |
-| `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `CartUpdateRequest`, `ProductRequest`, `PaymentRequest` |
+| `controller.request` | DTOs de entrada (records + Bean Validation). O subpacote `validation` tem as validações próprias. | `CartRequest`, `CartUpdateRequest`, `ProductRequest`, `PaymentRequest`, `validation.UniqueProductIds` |
 | `controller.response` | DTOs de saída. Nenhuma resposta expõe a entidade nem o modelo da Platzi. | `CartResponse`, `CartItemResponse`, `PaymentResponse`, `ProductResponse`, `CategoryResponse` |
 | `service` | Orquestração dos casos de uso do carrinho (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. Só o `ProductService` usa este pacote. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
@@ -122,6 +122,7 @@ stateDiagram-v2
 | R4 | Carrinho `SOLD` não pode ser alterado, limpo nem pago de novo | `Cart` (`replaceItems`, `clear`, `pay`) | `BusinessException` → 400 |
 | R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `Cart.replaceItems` | n/a |
 | R6 | Quantidade por item: 1 a 100 (na criação e na atualização) | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
+| R8 | Um produto só pode aparecer uma vez na lista de itens (na criação e na atualização) | `@UniqueProductIds` em `CartRequest` e `CartUpdateRequest` | 400 (lista de `ValidationErrorResponse`, campo `products`) |
 | R7 | Pagamento exige `paymentMethod` | `PaymentRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 
 > A atualização usa `CartUpdateRequest`, que só tem `products`: o dono do carrinho não muda. Um `clientId` enviado no corpo é ignorado.
