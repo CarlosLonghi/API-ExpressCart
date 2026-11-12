@@ -48,8 +48,9 @@ Database `express-cart`, single collection `carts`.
 
 | Term | File |
 |------|------|
-| Cart rules | `service/CartService.java` |
-| Total price calculation | `entity/Cart.java#calculateTotalPrice` |
+| Cart state rules | `entity/Cart.java` |
+| Cart use cases / one-open-cart rule | `service/CartService.java` |
+| Total price calculation | `entity/Cart.java#setItems`, `entity/Product.java#subtotal` |
 | Catalog + cache | `service/ProductService.java` |
 | Feign client / error mapping | `client/PlatziStoreClient.java`, `service/ProductService.java` |
 | Error → HTTP | `config/ControllerAdvice.java` |

@@ -16,9 +16,12 @@ import br.com.expresscart.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Orquestra os casos de uso do carrinho: carrega, consulta o catálogo e salva.
+ * As regras de estado (carrinho vendido, cálculo do total) ficam na entidade {@link Cart}.
+ */
 @Service
 @RequiredArgsConstructor
 public class CartService {
@@ -33,67 +36,39 @@ public class CartService {
                     );
                 });
 
-        List<Product> productList = buildProductList(cartRequest.products());
+        Cart cart = Cart.open(cartRequest.clientId(), buildProductList(cartRequest.products()));
 
-        Cart cart = Cart.builder()
-                .clientId(cartRequest.clientId())
-                .products(productList)
-                .status(Status.OPEN)
-                .build();
-        cart.calculateTotalPrice();
-
-        Cart createdCart = cartRepository.save(cart);
-        return new CartResponse(createdCart);
+        return new CartResponse(cartRepository.save(cart));
     }
 
     public CartResponse findCartById(String id) {
-        Cart cart = getCartById(id);
-        return new CartResponse(cart);
+        return new CartResponse(getCartById(id));
     }
 
     public CartResponse updateCart(String cartId, CartUpdateRequest cartRequest) {
         Cart cart = getCartById(cartId);
 
-        if (cart.getStatus().equals(Status.SOLD)) {
-            throw new BusinessException("Não é possivel alterar os dados de um carrinho já vendido.");
-        }
+        // Recusa carrinho vendido antes de consultar o catálogo
+        cart.ensureItemsCanChange();
+        cart.replaceItems(buildProductList(cartRequest.products()));
 
-        List<Product> productList = buildProductList(cartRequest.products());
-
-        cart.setProducts(productList);
-        cart.calculateTotalPrice();
-
-        Cart updatedCart = cartRepository.save(cart);
-        return new CartResponse(updatedCart);
+        return new CartResponse(cartRepository.save(cart));
     }
 
     public PaymentResponse payCart(String cartId, PaymentRequest paymentRequest) {
         Cart cart = getCartById(cartId);
 
-        if (cart.getStatus().equals(Status.SOLD)) {
-            throw new BusinessException("Operação cancelada. O carrinho informado já foi pago.");
-        }
+        cart.pay(paymentRequest.paymentMethod());
 
-        cart.setPaymentMethod(paymentRequest.paymentMethod());
-        cart.setStatus(Status.SOLD);
-
-        Cart paidCart = cartRepository.save(cart);
-        return new PaymentResponse(paidCart);
+        return new PaymentResponse(cartRepository.save(cart));
     }
 
     public CartResponse clearCart(String cartId) {
         Cart cart = getCartById(cartId);
 
-        if (cart.getStatus().equals(Status.SOLD)) {
-            throw new BusinessException("Não é possivel limpar um carrinho já vendido.");
-        }
+        cart.clear();
 
-        List<Product> emptyProductList = new ArrayList<>();
-        cart.setProducts(emptyProductList);
-        cart.calculateTotalPrice();
-
-        Cart cleanCart = cartRepository.save(cart);
-        return new CartResponse(cleanCart);
+        return new CartResponse(cartRepository.save(cart));
     }
 
     private List<Product> buildProductList(List<ProductRequest> productRequests) {

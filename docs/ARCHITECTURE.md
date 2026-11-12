@@ -59,10 +59,10 @@ flowchart TD
 | `controller.api.docs` | Interfaces só com anotações OpenAPI/Swagger. Os controllers as implementam para manter a documentação fora do código dos endpoints. | `CartApi`, `ProductApi` |
 | `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `CartUpdateRequest`, `ProductRequest`, `PaymentRequest` |
 | `controller.response` | DTOs de saída do carrinho. | `CartResponse`, `PaymentResponse` |
-| `service` | Regras de negócio (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
+| `service` | Orquestração dos casos de uso do carrinho (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
 | `repository` | Acesso ao MongoDB. | `CartRepository` |
-| `entity` | Documento Mongo e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
+| `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
 | `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
 | `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
 | `config` | Handler global de erros e metadados do OpenAPI. | `ControllerAdvice`, `OpenApiConfig` |
@@ -77,10 +77,19 @@ flowchart TD
 |---|---|---|
 | `id` | `String` | ObjectId gerado pelo Mongo |
 | `clientId` | `Long` | Identificador do cliente (não é validado contra nenhum cadastro) |
-| `totalPrice` | `BigDecimal` | Sem setter; calculado por `calculateTotalPrice()` = Σ(`price` × `quantity`) |
+| `totalPrice` | `BigDecimal` | Calculado pela própria entidade a cada mudança de itens = Σ(`price` × `quantity`) |
 | `products` | `List<Product>` | Itens embutidos no documento |
 | `status` | `Status` | `OPEN` ou `SOLD` |
 | `paymentMethod` | `PaymentMethod` | `PIX`, `DEBIT` ou `CREDIT`; nulo até o pagamento (omitido no JSON quando nulo) |
+
+A entidade não tem setters. Ela só muda por estes métodos, que aplicam as regras:
+
+| Método | O que faz | Recusa se |
+|---|---|---|
+| `Cart.open(clientId, itens)` | Cria o carrinho `OPEN` com o total calculado | n/a |
+| `replaceItems(itens)` | Substitui os itens e recalcula o total | carrinho `SOLD` |
+| `clear()` | Remove os itens e zera o total | carrinho `SOLD` |
+| `pay(método)` | Grava o método de pagamento e muda para `SOLD` | carrinho `SOLD` |
 
 ### `Product`: item embutido no carrinho
 
@@ -103,15 +112,15 @@ stateDiagram-v2
 
 ---
 
-## 4. Regras de negócio (`CartService`)
+## 4. Regras de negócio
 
 | # | Regra | Onde | Erro |
 |---|---|---|---|
 | R1 | Um cliente só pode ter **um** carrinho `OPEN` por vez | `createCart` → `findByClientIdAndStatus` | `BusinessException` → 400 |
 | R2 | Todo produto do pedido precisa existir na API Platzi | `buildProductListFromRequest` | `DataNotFoundException` → 404 |
-| R3 | O total é recalculado sempre que os itens mudam | `createCart`, `updateCart`, `clearCart` | n/a |
-| R4 | Carrinho `SOLD` não pode ser alterado, limpo nem pago de novo | `updateCart`, `clearCart`, `payCart` (checagem repetida 3×) | `BusinessException` → 400 |
-| R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `updateCart` | n/a |
+| R3 | O total é recalculado sempre que os itens mudam | `Cart` (`open`, `replaceItems`, `clear`) | n/a |
+| R4 | Carrinho `SOLD` não pode ser alterado, limpo nem pago de novo | `Cart` (`replaceItems`, `clear`, `pay`) | `BusinessException` → 400 |
+| R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `Cart.replaceItems` | n/a |
 | R6 | Quantidade por item: 1 a 100 (na criação e na atualização) | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 | R7 | Pagamento exige `paymentMethod` | `PaymentRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 
@@ -150,7 +159,7 @@ sequenceDiagram
         end
         PS-->>CS: produto
     end
-    CS->>CS: Cart.builder()... calculateTotalPrice()
+    CS->>CS: Cart.open(clientId, itens)
     CS->>DB: save(cart)
     CS-->>CC: CartResponse
     CC-->>C: 201 Created
