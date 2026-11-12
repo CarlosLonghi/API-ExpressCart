@@ -6,11 +6,13 @@ import br.com.expresscart.controller.request.CartRequest;
 import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.ProductRequest;
 import br.com.expresscart.entity.Cart;
+import br.com.expresscart.entity.PaymentMethod;
 import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 public final class TestFixtures {
@@ -52,14 +54,13 @@ public final class TestFixtures {
                 .build();
     }
 
+    /** Carrinho como viria do banco: com id e, se SOLD, já pago com PIX. */
     public static Cart cart(Status status, Product... items) {
-        Cart cart = Cart.builder()
-                .id(CART_ID)
-                .clientId(CLIENT_ID)
-                .products(new ArrayList<>(List.of(items)))
-                .status(status)
-                .build();
-        cart.calculateTotalPrice();
+        Cart cart = Cart.open(CLIENT_ID, List.of(items));
+        ReflectionTestUtils.setField(cart, "id", CART_ID);
+        if (status == Status.SOLD) {
+            cart.pay(PaymentMethod.PIX);
+        }
         return cart;
     }
 }
