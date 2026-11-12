@@ -57,7 +57,7 @@ flowchart TD
 |---|---|---|
 | `controller` | Endpoints REST. Delegam tudo para os services. | `CartController`, `ProductController` |
 | `controller.api.docs` | Interfaces só com anotações OpenAPI/Swagger. Os controllers as implementam para manter a documentação fora do código dos endpoints. | `CartApi`, `ProductApi` |
-| `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `ProductRequest`, `PaymentRequest` |
+| `controller.request` | DTOs de entrada (records + Bean Validation). | `CartRequest`, `CartUpdateRequest`, `ProductRequest`, `PaymentRequest` |
 | `controller.response` | DTOs de saída do carrinho. | `CartResponse`, `PaymentResponse` |
 | `service` | Regras de negócio (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
@@ -112,9 +112,10 @@ stateDiagram-v2
 | R3 | O total é recalculado sempre que os itens mudam | `createCart`, `updateCart`, `clearCart` | n/a |
 | R4 | Carrinho `SOLD` não pode ser alterado, limpo nem pago de novo | `updateCart`, `clearCart`, `payCart` (checagem repetida 3×) | `BusinessException` → 400 |
 | R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `updateCart` | n/a |
-| R6 | Quantidade por item: 1 a 100 | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
+| R6 | Quantidade por item: 1 a 100 (na criação e na atualização) | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
+| R7 | Pagamento exige `paymentMethod` | `PaymentRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 
-> ⚠️ Na atualização, o `clientId` enviado no corpo é **ignorado**, mas continua obrigatório pelo DTO. A validação (`@Valid`) só é aplicada no `POST`. Veja [REFACTORING.md](REFACTORING.md).
+> A atualização usa `CartUpdateRequest`, que só tem `products`: o dono do carrinho não muda. Um `clientId` enviado no corpo é ignorado.
 
 ---
 
@@ -176,8 +177,8 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 |---|---|---|---|---|
 | `POST` | `/api/v1/cart` | `CartRequest` | `201` `CartResponse` | 400 (validação / carrinho aberto duplicado), 404 (produto), 502 (Platzi) |
 | `GET` | `/api/v1/cart/{id}` | n/a | `200` `CartResponse` | 404 (carrinho) |
-| `PUT` | `/api/v1/cart/{id}` | `CartRequest` | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho / produto), 502 (Platzi) |
-| `PUT` | `/api/v1/cart/{id}/payment` | `PaymentRequest` | `200` `PaymentResponse` | 400 (já pago), 404 (carrinho) |
+| `PUT` | `/api/v1/cart/{id}` | `CartUpdateRequest` | `200` `CartResponse` | 400 (validação / carrinho vendido), 404 (carrinho / produto), 502 (Platzi) |
+| `PUT` | `/api/v1/cart/{id}/payment` | `PaymentRequest` | `200` `PaymentResponse` | 400 (validação / já pago), 404 (carrinho) |
 | `PUT` | `/api/v1/cart/{id}/clear` | n/a | `200` `CartResponse` | 400 (carrinho vendido), 404 (carrinho) |
 
 ### Produto: `/api/v1/product`
@@ -190,8 +191,11 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 ### Exemplos de payload
 
 ```jsonc
-// CartRequest (POST e PUT)
+// CartRequest (POST)
 { "clientId": 1, "products": [ { "id": 3, "quantity": 2 } ] }
+
+// CartUpdateRequest (PUT)
+{ "products": [ { "id": 3, "quantity": 2 } ] }
 
 // PaymentRequest
 { "paymentMethod": "PIX" }   // PIX | DEBIT | CREDIT

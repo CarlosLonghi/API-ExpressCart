@@ -16,10 +16,9 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Era:** qualquer erro da Platzi diferente de 400 virava `UndeclaredThrowableException` e 500 genérico, sem log.
 - **Correção:** falhas da Platzi (5xx, outros 4xx, timeout, conexão recusada) viram `ExternalServiceException` → **502** com `"Erro ao consultar o catálogo de produtos (Platzi)"`, e a causa vai para o log.
 
-### 🔴 B3. `@Valid` ausente em `PUT /cart/{id}` e `PUT /cart/{id}/payment`
-- **Onde:** `controller/CartController.java` (`updateCart`, `payCart`)
-- **Problema:** quantidade 0, negativa ou > 100, `products: null` (→ NPE → 500) e `paymentMethod: null` (o carrinho fica `SOLD` sem método de pagamento) passam direto.
-- **Sugestão:** adicionar `@Valid` e criar um DTO próprio para update, sem `clientId` (veja Q2).
+### ✅ B3. `@Valid` ausente em `PUT /cart/{id}` e `PUT /cart/{id}/payment` (corrigido)
+- **Era:** quantidade 0, negativa ou > 100, `products: null` (NPE → 500) e `paymentMethod: null` (carrinho `SOLD` sem método de pagamento) passavam direto.
+- **Correção:** os dois endpoints validam o corpo com `@Valid`. O `PUT /cart/{id}` passou a usar `CartUpdateRequest`, só com `products`. Um `clientId` enviado no corpo continua sendo aceito e ignorado.
 
 ### 🔴 B4. Entrada malformada responde 500 em vez de 400
 - **Onde:** `config/ControllerAdvice.java`
@@ -43,8 +42,8 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 
 ### 🟡 B8. Pequenos bugs
 - `ControllerAdvice.handleNoHandlerFound`: `Optional.of(...)` lança NPE se a URL for nula. Deveria ser `Optional.ofNullable`.
-- `CartRequest.clientId`: `@Min(1)` com a mensagem *"não pode ser menor que 0"*.
-- `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. Decidir se isso é intencional (`@NotEmpty`).
+- ✅ `CartRequest.clientId`: a mensagem do `@Min(1)` dizia *"não pode ser menor que 0"*. Agora diz *"deve ser maior que 0"*.
+- `CartRequest.products`: `@NotNull` aceita lista vazia, então é possível criar carrinho sem itens. **Mantido por enquanto:** carrinho vazio já é um estado válido (é o resultado do `clear`). Decidir se a criação deve exigir ao menos um item (`@NotEmpty`).
 - Itens com o mesmo `id` repetido no pedido não são agrupados e viram duas linhas no carrinho.
 - `Cart.calculateTotalPrice()` lança NPE se `products` for nulo.
 
@@ -90,12 +89,12 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 | Endpoint | Problema |
 |---|---|
 | `GET /cart/{id}` | Schema do 200 ainda aponta para `Cart.class` (TODO antigo), mas o retorno é `CartResponse` |
-| `PUT /cart/{id}` | 400 documentado como "Carrinho duplicado", mas o erro real é "carrinho já vendido" |
+| `PUT /cart/{id}` | ✅ corrigido junto com B3 |
 | `POST` / `PUT` | Exemplo de validação usa o campo `email`, que não existe |
 | `POST` | Mensagem documentada difere da real (`"...para o cliente de id: X"`) |
 | `PUT /clear` | 200 documentado **sem conteúdo**, mas retorna `CartResponse` |
 | `PUT /payment` | Descrição do 200 diz "Dados do Carrinho" e não há exemplo de `PaymentRequest` |
-| `CartController` | Import não usado de `entity.Cart` |
+| `CartController` | ✅ import não usado removido |
 
 Textos com acentuação inconsistente ("possivel" × "possível").
 
