@@ -48,8 +48,8 @@ class CartServiceTest {
         @Test
         void createsOpenCartWithProductSnapshotAndTotal() {
             when(cartRepository.findByClientIdAndStatus(CLIENT_ID, Status.OPEN)).thenReturn(Optional.empty());
-            when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "Camiseta", "10.50"));
-            when(productService.getProductById(2L)).thenReturn(platziProduct(2L, "Boné", "20.00"));
+            when(productService.getProductById(1L)).thenReturn(productResponse(1L, "Camiseta", "10.50"));
+            when(productService.getProductById(2L)).thenReturn(productResponse(2L, "Boné", "20.00"));
             saveReturnsArgument();
 
             CartResponse response = cartService.createCart(cartRequest(CLIENT_ID, item(1L, 2), item(2L, 1)));
@@ -101,7 +101,7 @@ class CartServiceTest {
         void keepsDuplicatedProductIdsAsSeparateLines() {
             // B8: itens repetidos não são agrupados
             when(cartRepository.findByClientIdAndStatus(CLIENT_ID, Status.OPEN)).thenReturn(Optional.empty());
-            when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "Camiseta", "10.00"));
+            when(productService.getProductById(1L)).thenReturn(productResponse(1L, "Camiseta", "10.00"));
             saveReturnsArgument();
 
             CartResponse response = cartService.createCart(cartRequest(CLIENT_ID, item(1L, 1), item(1L, 2)));
@@ -155,13 +155,13 @@ class CartServiceTest {
             // Invariante I5: substitui a lista inteira
             when(cartRepository.findById(CART_ID))
                     .thenReturn(Optional.of(cart(Status.OPEN, cartItem(1L, "Antigo", "100.00", 1))));
-            when(productService.getProductById(2L)).thenReturn(platziProduct(2L, "Novo", "7.00"));
+            when(productService.getProductById(2L)).thenReturn(productResponse(2L, "Novo", "7.00"));
             saveReturnsArgument();
 
             CartResponse response = cartService.updateCart(CART_ID, cartUpdateRequest(item(2L, 3)));
 
             assertThat(response.products()).singleElement()
-                    .satisfies(p -> assertThat(p.getId()).isEqualTo(2L));
+                    .satisfies(p -> assertThat(p.id()).isEqualTo(2L));
             assertThat(response.totalPrice()).isEqualByComparingTo("21.00");
         }
 
@@ -169,7 +169,7 @@ class CartServiceTest {
         void keepsCartOwnerAndStatus() {
             // Invariante I5: o update só troca os itens
             when(cartRepository.findById(CART_ID)).thenReturn(Optional.of(cart(Status.OPEN)));
-            when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "A", "1.00"));
+            when(productService.getProductById(1L)).thenReturn(productResponse(1L, "A", "1.00"));
             saveReturnsArgument();
 
             CartResponse response = cartService.updateCart(CART_ID, cartUpdateRequest(item(1L, 1)));

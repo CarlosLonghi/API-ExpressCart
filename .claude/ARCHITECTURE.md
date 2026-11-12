@@ -10,7 +10,7 @@ src/main/java/br/com/expresscart/
 │
 ├── client/
 │   ├── PlatziStoreClient.java           # Feign: GET /products, GET /products/{id}; default error decoder (FeignException)
-│   └── response/                        # PlatziProductResponse, PlatziCategoryResponse (Serializable, cached in Redis)
+│   └── response/                        # PlatziProductResponse, PlatziCategoryResponse (used by ProductService only)
 │
 ├── config/
 │   ├── ControllerAdvice.java            # Global exception → HTTP translator (GenericErrorResponse / ValidationErrorResponse list)
@@ -19,7 +19,7 @@ src/main/java/br/com/expresscart/
 ├── controller/
 │   ├── api/docs/                        # OpenAPI contract interfaces (CartApi, ProductApi), annotations only
 │   ├── request/                         # CartRequest (POST), CartUpdateRequest (PUT), ProductRequest, PaymentRequest (records + Bean Validation)
-│   ├── response/                        # CartResponse, PaymentResponse (records, built from Cart)
+│   ├── response/                        # CartResponse + CartItemResponse, PaymentResponse (built from Cart); ProductResponse + CategoryResponse (Serializable, cached in Redis)
 │   ├── CartController.java              # /api/v1/cart
 │   └── ProductController.java           # /api/v1/product
 │
@@ -38,14 +38,14 @@ src/main/java/br/com/expresscart/
 │
 └── service/
     ├── CartService.java                 # cart use cases: load → call Cart → save; one-open-cart-per-client check
-    └── ProductService.java              # @Cacheable("products"), @Cacheable("product", key=#id); translates FeignException; @EnableCaching lives here
+    └── ProductService.java              # catalog: calls Platzi, translates FeignException, maps to ProductResponse; caches "catalog-products" / "catalog-product"; @EnableCaching lives here
 ```
 
 ## Module responsibilities
 
 - **controller/**: HTTP boundary only. Every `@RequestBody` is `@Valid`. No business logic.
 - **service/**: `CartService` orchestrates (load, catalog lookup, save) and owns the only rule that needs the repository (I1); `ProductService` is the only caller of `PlatziStoreClient` and owns caching.
-- **client/**: external contract. Its DTOs should not leak past `service/` (today they do, A2).
+- **client/**: external contract. Its DTOs do not leave `ProductService`.
 - **entity/**: persistence model **and** domain behavior. `Cart` has no setters/builder; state changes only through its business methods. Spring Data reads it via the protected no-arg constructor and field access.
 - **config/**: cross-cutting (errors, OpenAPI). Changes here affect every endpoint.
 
@@ -61,6 +61,7 @@ src/main/java/br/com/expresscart/
 - **I6.1: Upstream failures are 502, never 500.** Any other `FeignException` → `ExternalServiceException` → 502, logged with its cause. A cart is not saved when a lookup fails.
 - **I7: Error shape.** Validation errors → 400 with a JSON **array** of `{field, message}`; every other handled error → `{timestamp, status, message}`.
 - **I7.1: Client mistakes are 4xx.** Unreadable JSON, unknown enum value, wrong field type, non-numeric path id → 400; wrong `Content-Type` → 415. A 500 means an unexpected server error and is always logged with its stack trace; its response body never carries exception details.
+- **I7.2: Responses are owned DTOs.** No controller returns an entity or a Platzi record; a change in Mongo mapping or in Platzi's payload cannot silently change this API's JSON.
 - **I8: Products are cached.** `ProductService` results live in Redis for `spring.cache.redis.time-to-live` (60 s). Repeated lookups within the TTL don't hit Platzi.
 
 ## Data flow

@@ -1,7 +1,7 @@
 package br.com.expresscart.controller;
 
-import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.api.docs.ProductApi;
+import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +20,8 @@ public class ProductController implements ProductApi {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<PlatziProductResponse>> getAllProducts() {
-        List<PlatziProductResponse> products = productService.getAllProducts();
+    public ResponseEntity<List<ProductResponse>> getAllProducts() {
+        List<ProductResponse> products = productService.getAllProducts();
 
         return products.isEmpty()
                 ? ResponseEntity.noContent().build()
@@ -29,7 +29,7 @@ public class ProductController implements ProductApi {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlatziProductResponse> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 }

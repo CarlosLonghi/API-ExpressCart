@@ -1,12 +1,12 @@
 package br.com.expresscart.service;
 
-import br.com.expresscart.client.response.PlatziProductResponse;
 import br.com.expresscart.controller.request.CartRequest;
 import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.controller.request.ProductRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
+import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
@@ -74,7 +74,7 @@ public class CartService {
     private List<Product> buildProductList(List<ProductRequest> productRequests) {
         return productRequests.stream()
                 .map(productRequest -> {
-                    PlatziProductResponse productResponse = productService.getProductById(productRequest.id());
+                    ProductResponse productResponse = productService.getProductById(productRequest.id());
                     return Product.builder()
                             .id(productResponse.id())
                             .title(productResponse.title())

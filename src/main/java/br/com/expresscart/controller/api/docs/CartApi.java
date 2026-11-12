@@ -5,7 +5,6 @@ import br.com.expresscart.controller.request.CartUpdateRequest;
 import br.com.expresscart.controller.request.PaymentRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
-import br.com.expresscart.entity.Cart;
 import br.com.expresscart.exception.response.GenericErrorResponse;
 import br.com.expresscart.exception.response.ValidationErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -153,7 +152,7 @@ public interface CartApi {
                     description = "Dados do Carrinho",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Cart.class) // TODO: criar Response DTO para carrinho
+                            schema = @Schema(implementation = CartResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "404", description = "Carrinho não encontrado",

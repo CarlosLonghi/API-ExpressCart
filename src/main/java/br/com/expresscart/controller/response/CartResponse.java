@@ -1,7 +1,6 @@
 package br.com.expresscart.controller.response;
 
 import br.com.expresscart.entity.Cart;
-import br.com.expresscart.entity.Product;
 import br.com.expresscart.entity.Status;
 
 import java.math.BigDecimal;
@@ -11,7 +10,7 @@ public record CartResponse(
         String id,
         Long clientId,
         BigDecimal totalPrice,
-        List<Product> products,
+        List<CartItemResponse> products,
         Status status
 ) {
 
@@ -20,7 +19,7 @@ public record CartResponse(
                 cart.getId(),
                 cart.getClientId(),
                 cart.getTotalPrice(),
-                cart.getProducts(),
+                cart.getProducts().stream().map(CartItemResponse::new).toList(),
                 cart.getStatus()
         );
     }

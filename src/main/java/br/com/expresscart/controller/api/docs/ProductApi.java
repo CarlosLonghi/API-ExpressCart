@@ -1,6 +1,6 @@
 package br.com.expresscart.controller.api.docs;
 
-import br.com.expresscart.client.response.PlatziProductResponse;
+import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.exception.response.GenericErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -67,7 +67,7 @@ public interface ProductApi {
                     content = @Content(
                             mediaType = "application/json",
                             array = @ArraySchema (
-                                schema = @Schema(implementation = PlatziProductResponse.class)
+                                schema = @Schema(implementation = ProductResponse.class)
                             ),
                             examples = @ExampleObject(
                                 name = "Lista de Produtos",
@@ -92,7 +92,7 @@ public interface ProductApi {
                     )
             )
     })
-    ResponseEntity<List<PlatziProductResponse>> getAllProducts();
+    ResponseEntity<List<ProductResponse>> getAllProducts();
 
     @Operation(
             summary = "Buscar produto por ID",
@@ -104,7 +104,7 @@ public interface ProductApi {
                     description = "Produto retornado com sucesso",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PlatziProductResponse.class),
+                            schema = @Schema(implementation = ProductResponse.class),
                             examples = @ExampleObject(
                                 name = "Dados do Produto",
                                 value = """
@@ -142,7 +142,7 @@ public interface ProductApi {
                     )
             )
     })
-    ResponseEntity<PlatziProductResponse> getProductById(
+    ResponseEntity<ProductResponse> getProductById(
             @Parameter(in = ParameterIn.PATH, description = "ID do Produto", required = true)
             @PathVariable Long id
     );
