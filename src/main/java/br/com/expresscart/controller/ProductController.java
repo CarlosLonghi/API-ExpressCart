@@ -30,8 +30,6 @@ public class ProductController implements ProductApi {
 
     @GetMapping("/{id}")
     public ResponseEntity<PlatziProductResponse> getProductById(@PathVariable Long id) {
-        return productService.getProductById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 }

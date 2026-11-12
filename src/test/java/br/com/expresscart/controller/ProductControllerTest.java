@@ -2,6 +2,7 @@ package br.com.expresscart.controller;
 
 import br.com.expresscart.client.PlatziStoreClient;
 import br.com.expresscart.exception.handler.DataNotFoundException;
+import br.com.expresscart.exception.handler.ExternalServiceException;
 import br.com.expresscart.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static br.com.expresscart.support.TestFixtures.platziProduct;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -57,7 +57,7 @@ class ProductControllerTest {
 
     @Test
     void getById_returns200() throws Exception {
-        when(productService.getProductById(1L)).thenReturn(Optional.of(platziProduct(1L, "Camiseta", "10.50")));
+        when(productService.getProductById(1L)).thenReturn(platziProduct(1L, "Camiseta", "10.50"));
 
         mockMvc.perform(get(BASE + "/{id}", 1))
                 .andExpect(status().isOk())
@@ -65,23 +65,26 @@ class ProductControllerTest {
     }
 
     @Test
-    void getById_emptyOptionalReturns404WithoutBody() throws Exception {
-        // B1/A5: caminho inalcançável em produção; responde 404 sem o corpo padrão de erro
-        when(productService.getProductById(1L)).thenReturn(Optional.empty());
+    void getById_dataNotFoundReturns404Object() throws Exception {
+        when(productService.getProductById(1L))
+                .thenThrow(new DataNotFoundException("Produto não encontrado: id=1"));
 
         mockMvc.perform(get(BASE + "/{id}", 1))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string(""));
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Produto não encontrado: id=1"));
     }
 
     @Test
-    void getById_dataNotFoundReturns404Object() throws Exception {
-        when(productService.getProductById(1L))
-                .thenThrow(new DataNotFoundException("Produto não encontrado (Platzi Client)"));
+    void externalServiceFailureReturns502Object() throws Exception {
+        when(productService.getAllProducts()).thenThrow(new ExternalServiceException(
+                "Erro ao consultar o catálogo de produtos (Platzi)", new RuntimeException("timeout")));
 
-        mockMvc.perform(get(BASE + "/{id}", 1))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Produto não encontrado (Platzi Client)"));
+        mockMvc.perform(get(BASE))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.status").value(502))
+                .andExpect(jsonPath("$.message").value("Erro ao consultar o catálogo de produtos (Platzi)"))
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 
     @Test

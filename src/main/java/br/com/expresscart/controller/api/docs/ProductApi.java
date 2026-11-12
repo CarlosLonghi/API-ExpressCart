@@ -38,6 +38,22 @@ import java.util.List;
 
         )
 )
+@ApiResponse(responseCode = "502", description = "Falha ao consultar a API externa de produtos (Platzi)",
+        content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = GenericErrorResponse.class),
+                examples = @ExampleObject(
+                    name = "API externa indisponível",
+                    value = """
+                        {
+                          "timestamp": "2025-08-27T01:50:59.386Z",
+                          "status": 502,
+                          "message": "Erro ao consultar o catálogo de produtos (Platzi)"
+                        }
+                    """
+                )
+        )
+)
 public interface ProductApi {
 
     @Operation(
@@ -119,7 +135,7 @@ public interface ProductApi {
                                     {
                                       "timestamp": "2025-08-27T01:50:59.386Z",
                                       "status": 404,
-                                      "message": "Produto não encontrado (Platzi Client)"
+                                      "message": "Produto não encontrado: id=1"
                                     }
                                 """
                             )

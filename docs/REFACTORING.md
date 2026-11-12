@@ -8,15 +8,13 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 
 ## 1. Bugs e comportamentos incorretos
 
-### 🔴 B1. `CustomErrorDecoder` torna código do `ProductService` inalcançável
-- **Onde:** `config/CustomErrorDecoder.java`, `service/ProductService.java` (`getProductById`), `controller/ProductController.java`
-- **Problema:** o decoder converte o 400 da Platzi em `DataNotFoundException` **antes** de chegar ao service. Por isso o `catch (FeignException e)` com `status() == 400 → Optional.empty()` nunca executa, e o `orElseGet(() -> notFound())` do controller e o `orElseThrow(... "Produto não encontrado: id=X")` do `CartService` também não. Na prática, a mensagem de erro sempre é `"Produto não encontrado (Platzi Client)"`, sem o ID.
-- **Sugestão:** escolher **uma** estratégia. Ou o decoder traduz os erros e o service deixa de retornar `Optional`, ou o decoder sai e o service trata a `FeignException`.
+### ✅ B1. `CustomErrorDecoder` tornava código do `ProductService` inalcançável (corrigido)
+- **Era:** o decoder convertia o 400 da Platzi em `DataNotFoundException` antes de chegar ao service, então o `catch (FeignException)` do service, o `orElseGet` do controller e o `orElseThrow` do `CartService` nunca executavam. A mensagem de erro não trazia o id.
+- **Correção:** o `CustomErrorDecoder` foi removido. O `ProductService` é o único lugar que traduz erros do Feign e não retorna mais `Optional`. Produto inexistente → `DataNotFoundException("Produto não encontrado: id=X")` → 404.
 
-### 🔴 B2. Decoder devolve `Exception` checada para erros não-400
-- **Onde:** `config/CustomErrorDecoder.java` (`default: return new Exception(...)`)
-- **Problema:** como a interface Feign não declara exceção checada, o proxy a embrulha em `UndeclaredThrowableException`. Isso vira 500 sem log nenhum (ver B5). Também trata 5xx e 404 da Platzi do mesmo jeito.
-- **Sugestão:** retornar uma `RuntimeException` própria (ex.: `ExternalServiceException`) mapeada para **502/503**, e usar `ErrorDecoder.Default` como fallback.
+### ✅ B2. Decoder devolvia `Exception` checada para erros não-400 (corrigido)
+- **Era:** qualquer erro da Platzi diferente de 400 virava `UndeclaredThrowableException` e 500 genérico, sem log.
+- **Correção:** falhas da Platzi (5xx, outros 4xx, timeout, conexão recusada) viram `ExternalServiceException` → **502** com `"Erro ao consultar o catálogo de produtos (Platzi)"`, e a causa vai para o log.
 
 ### 🔴 B3. `@Valid` ausente em `PUT /cart/{id}` e `PUT /cart/{id}/payment`
 - **Onde:** `controller/CartController.java` (`updateCart`, `payCart`)

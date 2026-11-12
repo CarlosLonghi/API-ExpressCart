@@ -80,7 +80,6 @@ src/
  │   │       │
  │   │       ├── config/
  │   │       │   ├── ControllerAdvice
- │   │       │   ├── CustomErrorDecoder
  │   │       │   └── OpenApiConfig
  │   │       │
  │   │       ├── controller/
