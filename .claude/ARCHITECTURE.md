@@ -14,6 +14,7 @@ src/main/java/br/com/expresscart/
 │
 ├── config/
 │   ├── ControllerAdvice.java            # Global exception → HTTP translator (GenericErrorResponse / ValidationErrorResponse list)
+│   ├── CacheConfig.java                 # @EnableCaching; Redis caches as JSON, typed serializer + TTL per cache; cache name constants
 │   └── OpenApiConfig.java               # OpenAPI metadata
 │
 ├── controller/
@@ -39,7 +40,7 @@ src/main/java/br/com/expresscart/
 │
 └── service/
     ├── CartService.java                 # cart use cases: load → call Cart → save; one-open-cart-per-client check
-    └── ProductService.java              # catalog: calls Platzi, translates FeignException, maps to ProductResponse; caches "catalog-products" / "catalog-product"; @EnableCaching lives here
+    └── ProductService.java              # catalog: calls Platzi, translates FeignException, maps to ProductResponse; cached via the names in CacheConfig
 ```
 
 ## Module responsibilities
@@ -65,7 +66,7 @@ src/main/java/br/com/expresscart/
 - **I7: Error shape.** Validation errors → 400 with a JSON **array** of `{field, message}`; every other handled error → `{timestamp, status, message}`.
 - **I7.1: Client mistakes are 4xx.** Unreadable JSON, unknown enum value, wrong field type, non-numeric path id → 400; wrong `Content-Type` → 415. A 500 means an unexpected server error and is always logged with its stack trace; its response body never carries exception details.
 - **I7.2: Responses are owned DTOs.** No controller returns an entity or a Platzi record; a change in Mongo mapping or in Platzi's payload cannot silently change this API's JSON.
-- **I8: Products are cached.** `ProductService` results live in Redis for `spring.cache.redis.time-to-live` (60 s). Repeated lookups within the TTL don't hit Platzi.
+- **I8: Products are cached.** `ProductService` results live in Redis as JSON, in the caches named by `CacheConfig` (`catalog-product-v2::{id}`, `catalog-products-v2`), each with its TTL from `expresscart.cache.*` (60 s by default). Repeated lookups within the TTL don't hit Platzi; failed lookups are never cached.
 
 ## Data flow
 
