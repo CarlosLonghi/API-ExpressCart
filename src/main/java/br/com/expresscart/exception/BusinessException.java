@@ -1,4 +1,4 @@
-package br.com.expresscart.exception.handler;
+package br.com.expresscart.exception;
 
 public class BusinessException extends RuntimeException {
 

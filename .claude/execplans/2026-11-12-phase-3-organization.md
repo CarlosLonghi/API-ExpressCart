@@ -26,11 +26,13 @@ Delivered as three stacked PRs:
 ## Progress Checklist
 
 - [x] PR 1: `CacheConfig` with `@EnableCaching`, JSON values, TTL per cache
-- [ ] PR 2: exception package, handler name, `FeignConfig`
+- [x] PR 2: exceptions in `exception/`, `ApplicationControllerAdvice`, `FeignConfig`
 - [ ] PR 3: `CartItem`
 - [ ] Docs updated per PR
 
 ## Surprises & Discoveries
+
+**2026-11-12**: After moving/renaming classes, `./mvnw verify` failed with `NoClassDefFoundError` for the old package: stale `.class` files in `target/` (the old `ControllerAdvice.class` was still picked up by component scan). `./mvnw clean verify` fixes it; always clean after a move.
 
 **2026-11-12**: `GenericJackson2JsonRedisSerializer` (the suggestion in A4) is a poor fit for records: its default typing only adds type information to non-final classes, and records are final, so values come back as `LinkedHashMap` and fail with `ClassCastException`. Used one typed `Jackson2JsonRedisSerializer` per cache instead.
 
@@ -43,6 +45,8 @@ Delivered as three stacked PRs:
 | 2026-11-12 | TTLs moved to `expresscart.cache.product-ttl` / `product-list-ttl`; `spring.cache.redis.time-to-live` removed | Each cache config is now built explicitly, so the Boot property would no longer apply to them; leaving it would be a setting that does nothing. Both default to the previous 60 s. |
 | 2026-11-12 | Uses the application's `ObjectMapper` | Same number/date handling as the HTTP responses, so a cached product serializes to the client exactly like a fresh one. |
 | 2026-11-12 | `disableCachingNullValues()` | The catalog methods never return null (absence is an exception), and the typed JSON serializer has no representation for Spring's `NullValue` marker. |
+| 2026-11-12 | Handler renamed to `config/ApplicationControllerAdvice`, and `controller/request` + `controller/response` kept, instead of the diagnosis' `exception/GlobalExceptionHandler` and `dto/*` | Same names and locations as the API-Eletro-Longhi project, so both codebases read the same way. The diagnosis only said the old names were confusing, not that these specific targets were required. |
+| 2026-11-12 | `@EnableFeignClients(basePackageClasses = PlatziStoreClient.class)` in `config/FeignConfig` | Off the main class, `@WebMvcTest` slices stop trying to build the Feign client, so the `@MockitoBean PlatziStoreClient` workaround from Phase 0 is gone. `basePackageClasses` is needed because the annotation's default scan root would now be `config`. |
 
 ## Context & Orientation
 

@@ -1,8 +1,8 @@
 package br.com.expresscart.config;
 
-import br.com.expresscart.exception.handler.BusinessException;
-import br.com.expresscart.exception.handler.DataNotFoundException;
-import br.com.expresscart.exception.handler.ExternalServiceException;
+import br.com.expresscart.exception.BusinessException;
+import br.com.expresscart.exception.DataNotFoundException;
+import br.com.expresscart.exception.ExternalServiceException;
 import br.com.expresscart.exception.response.GenericErrorResponse;
 import br.com.expresscart.exception.response.ValidationErrorResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @RestControllerAdvice
 @Slf4j
-public class ControllerAdvice {
+public class ApplicationControllerAdvice {
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<GenericErrorResponse> handleNoHandlerFound(NoHandlerFoundException exception) {

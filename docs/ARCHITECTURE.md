@@ -63,9 +63,9 @@ flowchart TD
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. Só o `ProductService` usa este pacote. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
 | `repository` | Acesso ao MongoDB. | `CartRepository` |
 | `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
-| `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
+| `exception` | Exceções de aplicação. | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
 | `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
-| `config` | Handler global de erros, configuração do cache e metadados do OpenAPI. | `ControllerAdvice`, `CacheConfig`, `OpenApiConfig` |
+| `config` | Handler global de erros, configuração do cache, registro dos clientes Feign e metadados do OpenAPI. | `ApplicationControllerAdvice`, `CacheConfig`, `FeignConfig`, `OpenApiConfig` |
 
 ---
 
@@ -220,7 +220,7 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 { "id": "66cd...", "status": "SOLD", "paymentMethod": "PIX" }
 ```
 
-### Formato dos erros (`config/ControllerAdvice`)
+### Formato dos erros (`config/ApplicationControllerAdvice`)
 
 | Exceção | HTTP | Corpo |
 |---|---|---|
@@ -249,7 +249,7 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 | `spring.data.redis.host/port/password` | `localhost` / `6379` / `password` | Conexão Redis |
 | `expresscart.cache.product-ttl` | `60s` | TTL do cache de produto por id |
 | `expresscart.cache.product-list-ttl` | `60s` | TTL do cache da lista de produtos |
-| `spring.mvc.throw-exception-if-no-handler-found` + `spring.web.resources.add-mappings: false` | n/a | Faz rotas inexistentes caírem no `ControllerAdvice` (404 em JSON) |
+| `spring.mvc.throw-exception-if-no-handler-found` + `spring.web.resources.add-mappings: false` | n/a | Faz rotas inexistentes caírem no `ApplicationControllerAdvice` (404 em JSON) |
 | `expresscart.client.platzi` | `https://api.escuelajs.co/api/v1` | URL base do Feign |
 
 Não há perfis (`application-*.yml`) nem variáveis de ambiente: tudo está fixo no arquivo.

@@ -79,7 +79,9 @@ src/
  │   │       │   └── PlatziStoreClient
  │   │       │
  │   │       ├── config/
- │   │       │   ├── ControllerAdvice
+ │   │       │   ├── ApplicationControllerAdvice
+ │   │       │   ├── CacheConfig
+ │   │       │   ├── FeignConfig
  │   │       │   └── OpenApiConfig
  │   │       │
  │   │       ├── controller/
@@ -87,12 +89,18 @@ src/
  │   │       │   │   ├── CartApi
  │   │       │   │   └── ProductApi
  │   │       │   ├── request/
+ │   │       │   │   ├── validation/
+ │   │       │   │   │   └── UniqueProductIds
  │   │       │   │   ├── CartRequest
+ │   │       │   │   ├── CartUpdateRequest
  │   │       │   │   ├── PaymentRequest
  │   │       │   │   └── ProductRequest
  │   │       │   ├── response/
+ │   │       │   │   ├── CartItemResponse
  │   │       │   │   ├── CartResponse
- │   │       │   │   └── PaymentResponse
+ │   │       │   │   ├── CategoryResponse
+ │   │       │   │   ├── PaymentResponse
+ │   │       │   │   └── ProductResponse
  │   │       │   ├── CartController
  │   │       │   └── ProductController
  │   │       │
@@ -103,12 +111,12 @@ src/
  │   │       │   └── Status
  │   │       │
  │   │       ├── exception/
- │   │       │   ├── handler/
- │   │       │   │   ├── BusinessException
- │   │       │   │   └── DataNotFoundException
- │   │       │   └── response/
- │   │       │       ├── GenericErrorResponse
- │   │       │       └── ValidationErrorResponse
+ │   │       │   ├── response/
+ │   │       │   │   ├── GenericErrorResponse
+ │   │       │   │   └── ValidationErrorResponse
+ │   │       │   ├── BusinessException
+ │   │       │   ├── DataNotFoundException
+ │   │       │   └── ExternalServiceException
  │   │       │
  │   │       ├── repository/
  │   │       │   └── CartRepository
@@ -125,7 +133,7 @@ src/
  └── test/
      └── java/
          └── br/com/expresscart/
-             └── ExpressCartApplicationTests
+             └── (testes unitários, de slice web e de integração)
 ```
 
 > Detalhes de camadas, fluxos e regras de negócio em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

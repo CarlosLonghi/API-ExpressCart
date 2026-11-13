@@ -1,8 +1,7 @@
 package br.com.expresscart.controller;
 
-import br.com.expresscart.client.PlatziStoreClient;
-import br.com.expresscart.exception.handler.DataNotFoundException;
-import br.com.expresscart.exception.handler.ExternalServiceException;
+import br.com.expresscart.exception.DataNotFoundException;
+import br.com.expresscart.exception.ExternalServiceException;
 import br.com.expresscart.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,9 +32,6 @@ class ProductControllerTest {
 
     @MockitoBean
     private ProductService productService;
-
-    @MockitoBean
-    private PlatziStoreClient platziStoreClient;
 
     @Test
     void list_returns200WithProducts() throws Exception {

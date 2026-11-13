@@ -58,10 +58,14 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - **Correção:** respostas próprias (`ProductResponse`, `CategoryResponse`, `CartItemResponse`). O `ProductService` converte o modelo da Platzi, e o pacote `client` só é usado por ele. O JSON das respostas não mudou.
 - **Mantido:** os enums `Status` e `PaymentMethod` continuam sendo os da entidade. São vocabulário do domínio, e duplicá-los só criaria conversões sem ganho.
 
-### 🟡 A3. Pacotes e nomes
-- `exception.handler` contém exceções, não handlers. O handler real (`ControllerAdvice`) está em `config`.
-- `ControllerAdvice` tem o mesmo nome da anotação do Spring, o que confunde. Sugestão: `GlobalExceptionHandler` em `exception/`.
-- `controller.request/response` → pode virar `dto.request/response` ou ficar por feature (`cart/`, `product/`).
+### ✅ A3. Pacotes e nomes (corrigido)
+- **Era:** `exception.handler` continha exceções, não handlers; o handler real se chamava `ControllerAdvice`, igual à anotação do Spring; `@EnableFeignClients` ficava na classe principal.
+- **Correção:**
+  - As exceções ficam direto em `exception/`.
+  - O handler passou a se chamar `ApplicationControllerAdvice` e continua em `config/`.
+  - `@EnableFeignClients` foi para `config/FeignConfig`. Com isso, os testes de slice web não precisam mais de um mock do cliente Feign.
+  - `entity.Product` passou a se chamar `CartItem` (PR separado).
+- **Diferente da sugestão original:** o diagnóstico propunha `GlobalExceptionHandler` em `exception/` e `dto.request/response`. Segui a convenção do API-Eletro-Longhi, que usa `config/ApplicationControllerAdvice` e `controller/request` + `controller/response`, para os dois projetos terem a mesma estrutura.
 
 ### ✅ A4. Configuração de cache (corrigido)
 - **Era:** `@EnableCaching` ficava no `ProductService`, o cache usava serialização Java (bytes ilegíveis, que quebram quando a classe muda) e havia um TTL único para tudo.

@@ -6,14 +6,15 @@ Deeper-dive reference for the layered architecture summarized in the root `CLAUD
 
 ```
 src/main/java/br/com/expresscart/
-├── ExpressCartApplication.java          # @SpringBootApplication + @EnableFeignClients
+├── ExpressCartApplication.java          # @SpringBootApplication only
 │
 ├── client/
 │   ├── PlatziStoreClient.java           # Feign: GET /products, GET /products/{id}; default error decoder (FeignException)
 │   └── response/                        # PlatziProductResponse, PlatziCategoryResponse (used by ProductService only)
 │
 ├── config/
-│   ├── ControllerAdvice.java            # Global exception → HTTP translator (GenericErrorResponse / ValidationErrorResponse list)
+│   ├── ApplicationControllerAdvice.java # Global exception → HTTP translator (GenericErrorResponse / ValidationErrorResponse list)
+│   ├── FeignConfig.java                 # @EnableFeignClients
 │   ├── CacheConfig.java                 # @EnableCaching; Redis caches as JSON, typed serializer + TTL per cache; cache name constants
 │   └── OpenApiConfig.java               # OpenAPI metadata
 │
@@ -32,7 +33,9 @@ src/main/java/br/com/expresscart/
 │   └── PaymentMethod.java               # PIX, DEBIT, CREDIT
 │
 ├── exception/
-│   ├── handler/                         # BusinessException (→400), DataNotFoundException (→404), ExternalServiceException (→502). Misnamed package (A3)
+│   ├── BusinessException.java           # → 400
+│   ├── DataNotFoundException.java       # → 404
+│   ├── ExternalServiceException.java    # → 502
 │   └── response/                        # GenericErrorResponse, ValidationErrorResponse
 │
 ├── repository/
@@ -49,7 +52,7 @@ src/main/java/br/com/expresscart/
 - **service/**: `CartService` orchestrates (load, catalog lookup, save) and owns the only rule that needs the repository (I1); `ProductService` is the only caller of `PlatziStoreClient` and owns caching.
 - **client/**: external contract. Its DTOs do not leave `ProductService`.
 - **entity/**: persistence model **and** domain behavior. `Cart` has no setters/builder; state changes only through its business methods. Spring Data reads it via the protected no-arg constructor and field access.
-- **config/**: cross-cutting (errors, OpenAPI). Changes here affect every endpoint.
+- **config/**: cross-cutting (errors, cache, Feign registration, OpenAPI). `@Enable*` annotations belong here. Changes here affect every endpoint.
 
 ## Architectural invariants (current behavior: keep or change deliberately)
 
@@ -75,13 +78,13 @@ HTTP → Controller (@Valid DTO) → CartService ──► CartRepository → Mo
                                      │
                                      └──► ProductService ──(cache miss)──► PlatziStoreClient → Platzi API
                                               ▲ Redis cache                    └ FeignException → translated in ProductService
-Exceptions → config/ControllerAdvice → JSON error body
+Exceptions → config/ApplicationControllerAdvice → JSON error body
 ```
 
 ## Adding / changing an endpoint: checklist
 
 1. **Request/Response DTO**: record in `controller/request` or `controller/response`, with Bean Validation on the request.
-2. **Service**: business rule + exception (`BusinessException` / `DataNotFoundException`, or a new one mapped in `ControllerAdvice`).
+2. **Service**: business rule + exception (`BusinessException` / `DataNotFoundException`, or a new one in `exception/`, mapped in `ApplicationControllerAdvice`).
 3. **Controller**: method with `@Valid @RequestBody`.
 4. **Contract docs**: matching method in `controller/api/docs/*Api.java`, with real error messages in the examples.
 5. **Tests**: service unit test + `@WebMvcTest` slice; integration test if it touches Mongo/Redis/Platzi.

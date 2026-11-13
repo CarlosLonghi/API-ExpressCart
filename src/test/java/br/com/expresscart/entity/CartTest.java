@@ -1,6 +1,6 @@
 package br.com.expresscart.entity;
 
-import br.com.expresscart.exception.handler.BusinessException;
+import br.com.expresscart.exception.BusinessException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

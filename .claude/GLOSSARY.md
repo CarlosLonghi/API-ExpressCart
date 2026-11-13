@@ -56,7 +56,8 @@ Database `express-cart`, single collection `carts`.
 | Catalog | `service/ProductService.java` |
 | Cache names, serialization, TTL | `config/CacheConfig.java`, `application.yml` (`expresscart.cache.*`) |
 | Feign client / error mapping | `client/PlatziStoreClient.java`, `service/ProductService.java` |
-| Error → HTTP | `config/ControllerAdvice.java` |
+| Error → HTTP | `config/ApplicationControllerAdvice.java` |
+| Business exceptions | `exception/*.java` |
 | Swagger docs per endpoint | `controller/api/docs/CartApi.java`, `ProductApi.java` |
 | Validation messages | `controller/request/*.java` |
 | Custom constraints | `controller/request/validation/` |
