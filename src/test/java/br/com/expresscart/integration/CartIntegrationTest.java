@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static br.com.expresscart.support.PlatziStubs.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -177,6 +179,18 @@ class CartIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value(400));
 
         assertThat(cartRepository.findById(id).orElseThrow().getStatus()).isEqualTo(Status.OPEN);
+    }
+
+    @Test
+    void repeatedProductIsRejectedWithoutCallingCatalogOrSaving() throws Exception {
+        stubProduct(1, "Camiseta", "10.00");
+
+        createCart(1, "[{\"id\": 1, \"quantity\": 1}, {\"id\": 1, \"quantity\": 2}]")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("products"));
+
+        assertThat(cartRepository.count()).isZero();
+        PLATZI.verify(0, getRequestedFor(urlEqualTo("/products/1")));
     }
 
     @Test

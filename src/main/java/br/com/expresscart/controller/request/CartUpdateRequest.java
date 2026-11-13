@@ -1,5 +1,6 @@
 package br.com.expresscart.controller.request;
 
+import br.com.expresscart.controller.request.validation.UniqueProductIds;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,6 +13,7 @@ import java.util.List;
 public record CartUpdateRequest(
         @NotNull(message = "Informe a lista de Produtos do carrinho")
         @Valid
+        @UniqueProductIds
         List<ProductRequest> products
 ) {
 }

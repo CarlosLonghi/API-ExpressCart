@@ -99,6 +99,19 @@ class CartControllerTest {
     }
 
     @Test
+    void create_repeatedProductIsRejected() throws Exception {
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"clientId": 1, "products": [{"id": 1, "quantity": 1}, {"id": 1, "quantity": 2}]}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].field").value("products"))
+                .andExpect(jsonPath("$[0].message").value("A lista não pode conter o mesmo produto mais de uma vez"));
+
+        verifyNoInteractions(cartService);
+    }
+
+    @Test
     void create_businessExceptionBecomes400Object() throws Exception {
         when(cartService.createCart(any()))
                 .thenThrow(new BusinessException("Já existe um carrinho aberto para o cliente de id: 1"));
@@ -193,6 +206,18 @@ class CartControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$[*].field", containsInAnyOrder(
                         "products[0].quantity", "products[1].id", "products[1].quantity")));
+
+        verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void update_repeatedProductIsRejected() throws Exception {
+        mockMvc.perform(put(BASE + "/{id}", CART_ID).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"products": [{"id": 7, "quantity": 1}, {"id": 2, "quantity": 1}, {"id": 7, "quantity": 1}]}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].field").value("products"))
+                .andExpect(jsonPath("$[0].message").value("A lista não pode conter o mesmo produto mais de uma vez"));
 
         verifyNoInteractions(cartService);
     }

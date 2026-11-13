@@ -98,19 +98,6 @@ class CartServiceTest {
         }
 
         @Test
-        void keepsDuplicatedProductIdsAsSeparateLines() {
-            // B8: itens repetidos não são agrupados
-            when(cartRepository.findByClientIdAndStatus(CLIENT_ID, Status.OPEN)).thenReturn(Optional.empty());
-            when(productService.getProductById(1L)).thenReturn(productResponse(1L, "Camiseta", "10.00"));
-            saveReturnsArgument();
-
-            CartResponse response = cartService.createCart(cartRequest(CLIENT_ID, item(1L, 1), item(1L, 2)));
-
-            assertThat(response.products()).hasSize(2);
-            assertThat(response.totalPrice()).isEqualByComparingTo("30.00");
-        }
-
-        @Test
         void allowsEmptyProductList() {
             // B8: @NotNull aceita lista vazia
             when(cartRepository.findByClientIdAndStatus(CLIENT_ID, Status.OPEN)).thenReturn(Optional.empty());

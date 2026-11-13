@@ -19,6 +19,7 @@ src/main/java/br/com/expresscart/
 ├── controller/
 │   ├── api/docs/                        # OpenAPI contract interfaces (CartApi, ProductApi), annotations only
 │   ├── request/                         # CartRequest (POST), CartUpdateRequest (PUT), ProductRequest, PaymentRequest (records + Bean Validation)
+│   │   └── validation/                  # custom constraints: @UniqueProductIds
 │   ├── response/                        # CartResponse + CartItemResponse, PaymentResponse (built from Cart); ProductResponse + CategoryResponse (Serializable, cached in Redis)
 │   ├── CartController.java              # /api/v1/cart
 │   └── ProductController.java           # /api/v1/product
@@ -56,6 +57,7 @@ src/main/java/br/com/expresscart/
 - **I3: Total is derived.** `totalPrice` is recomputed inside `Cart` whenever items change; the item list is an unmodifiable copy, so it cannot drift. No caller computes or sets the total.
 - **I4: Item price is a snapshot.** `title`/`price` are copied from Platzi when the item list is built; carts are never re-priced afterwards.
 - **I5: Update replaces items.** `PUT /cart/{id}` (`CartUpdateRequest`, `products` only) rebuilds the whole list; owner and status never change. A `clientId` sent in the body is silently ignored (unknown JSON properties are not rejected).
+- **I5.2: One line per product.** A request listing the same product id twice is rejected with 400 (`@UniqueProductIds` on both cart request records). It is a boundary rule: `Cart` itself does not deduplicate, so any new entry point that builds item lists must apply the same constraint.
 - **I5.1: Every request body is validated at the controller.** Services assume valid input (e.g. `payCart` does not re-check a null `paymentMethod`).
 - **I6: Every product id must exist upstream.** Unknown id → Platzi 400 → `ProductService` → `DataNotFoundException("Produto não encontrado: id=X")` → 404. Failed lookups are not cached.
 - **I6.1: Upstream failures are 502, never 500.** Any other `FeignException` → `ExternalServiceException` → 502, logged with its cause. A cart is not saved when a lookup fails.
