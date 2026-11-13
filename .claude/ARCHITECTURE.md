@@ -28,7 +28,7 @@ src/main/java/br/com/expresscart/
 │
 ├── entity/
 │   ├── Cart.java                        # @Document("carts"); open / replaceItems / clear / pay; owns the state rules and the total
-│   ├── Product.java                     # embedded cart item, immutable (snapshot of title/price); subtotal()
+│   ├── CartItem.java                    # embedded cart line, immutable (snapshot of title/price); subtotal()
 │   ├── Status.java                      # OPEN, SOLD
 │   └── PaymentMethod.java               # PIX, DEBIT, CREDIT
 │
@@ -69,6 +69,7 @@ src/main/java/br/com/expresscart/
 - **I7: Error shape.** Validation errors → 400 with a JSON **array** of `{field, message}`; every other handled error → `{timestamp, status, message}`.
 - **I7.1: Client mistakes are 4xx.** Unreadable JSON, unknown enum value, wrong field type, non-numeric path id → 400; wrong `Content-Type` → 415. A 500 means an unexpected server error and is always logged with its stack trace; its response body never carries exception details.
 - **I7.2: Responses are owned DTOs.** No controller returns an entity or a Platzi record; a change in Mongo mapping or in Platzi's payload cannot silently change this API's JSON.
+- **I9: The stored cart document is a contract.** Fields: `_id`, `clientId`, `totalPrice`, `products` (each `_id`, `title`, `price`, `quantity`), `status`, `paymentMethod`, `_class`. Classes may be renamed (embedded items carry no `_class`), but renaming a **field** needs a data migration. Pinned by `CartIntegrationTest.storedDocumentKeepsItsFieldNames` and `cartWrittenBeforeTheRenameIsStillReadable`.
 - **I8: Products are cached.** `ProductService` results live in Redis as JSON, in the caches named by `CacheConfig` (`catalog-product-v2::{id}`, `catalog-products-v2`), each with its TTL from `expresscart.cache.*` (60 s by default). Repeated lookups within the TTL don't hit Platzi; failed lookups are never cached.
 
 ## Data flow

@@ -5,14 +5,15 @@ Deeper-dive reference for the domain summarized in the root `CLAUDE.md`. Code id
 ## Core entities
 
 ### Cart (Carrinho)
-MongoDB document in the `carts` collection. `id` (ObjectId string), `clientId` (`Long`, not validated against any customer registry, since there is no auth/customer module), `products` (embedded `List<Product>`), `totalPrice` (`BigDecimal`, derived, no setter), `status` (`Status`), `paymentMethod` (`PaymentMethod`, `@JsonInclude(NON_NULL)`, null until paid).
+MongoDB document in the `carts` collection. `id` (ObjectId string), `clientId` (`Long`, not validated against any customer registry, since there is no auth/customer module), `products` (embedded `List<CartItem>`), `totalPrice` (`BigDecimal`, derived, no setter), `status` (`Status`), `paymentMethod` (`PaymentMethod`, `@JsonInclude(NON_NULL)`, null until paid).
 
-### Product / item (Produto / item do carrinho)
-Two different things share the name:
-- **`entity.Product`**: a cart line embedded in `Cart`: `id`, `title`, `price`, `quantity`. Snapshot of the catalog at the time it was added (see invariant I4).
+### Product vs. cart item (Produto / item do carrinho)
+Different things, each with its own type:
+- **`entity.CartItem`**: a cart line embedded in `Cart` (stored in the `products` field; called `Product` until Phase 3): `id`, `title`, `price`, `quantity`. Snapshot of the catalog at the time it was added (see invariant I4).
 - **`client.response.PlatziProductResponse`**: the catalog product as returned by Platzi. Internal to `ProductService`.
 - **`controller.response.ProductResponse`**: the catalog product as this API exposes it (`id`, `title`, `price`, `images`, `category`). What `GET /api/v1/product` returns and what is cached.
-- **`controller.response.CartItemResponse`**: `entity.Product` as returned inside `CartResponse.products`.
+- **`controller.response.CartItemResponse`**: `entity.CartItem` as returned inside `CartResponse.products`.
+- **`controller.request.ProductRequest`**: one line of a cart request (`id` of the catalog product + `quantity`).
 
 ### Status
 `OPEN` (aberto, editable) → `SOLD` (vendido/pago, terminal). Only `PUT /cart/{id}/payment` moves to `SOLD`.
@@ -52,7 +53,7 @@ Database `express-cart`, single collection `carts`.
 |------|------|
 | Cart state rules | `entity/Cart.java` |
 | Cart use cases / one-open-cart rule | `service/CartService.java` |
-| Total price calculation | `entity/Cart.java#setItems`, `entity/Product.java#subtotal` |
+| Total price calculation | `entity/Cart.java#setItems`, `entity/CartItem.java#subtotal` |
 | Catalog | `service/ProductService.java` |
 | Cache names, serialization, TTL | `config/CacheConfig.java`, `application.yml` (`expresscart.cache.*`) |
 | Feign client / error mapping | `client/PlatziStoreClient.java`, `service/ProductService.java` |

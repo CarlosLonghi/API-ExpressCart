@@ -106,8 +106,8 @@ src/
  │   │       │
  │   │       ├── entity/
  │   │       │   ├── Cart
+ │   │       │   ├── CartItem
  │   │       │   ├── PaymentMethod
- │   │       │   ├── Product
  │   │       │   └── Status
  │   │       │
  │   │       ├── exception/

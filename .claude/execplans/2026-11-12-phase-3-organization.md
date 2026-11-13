@@ -1,7 +1,7 @@
 # ExecPlan: Phase 3, organization (config, packages, names)
 
 **Date**: 2026-11-12
-**Status**: In Progress
+**Status**: Complete (pending merge of the three PRs)
 **Covers**: A3, A4 (`docs/REFACTORING.md`)
 
 ## Goal
@@ -27,8 +27,8 @@ Delivered as three stacked PRs:
 
 - [x] PR 1: `CacheConfig` with `@EnableCaching`, JSON values, TTL per cache
 - [x] PR 2: exceptions in `exception/`, `ApplicationControllerAdvice`, `FeignConfig`
-- [ ] PR 3: `CartItem`
-- [ ] Docs updated per PR
+- [x] PR 3: `entity.Product` → `CartItem`, with storage-compatibility tests
+- [x] Docs updated per PR
 
 ## Surprises & Discoveries
 
@@ -47,6 +47,8 @@ Delivered as three stacked PRs:
 | 2026-11-12 | `disableCachingNullValues()` | The catalog methods never return null (absence is an exception), and the typed JSON serializer has no representation for Spring's `NullValue` marker. |
 | 2026-11-12 | Handler renamed to `config/ApplicationControllerAdvice`, and `controller/request` + `controller/response` kept, instead of the diagnosis' `exception/GlobalExceptionHandler` and `dto/*` | Same names and locations as the API-Eletro-Longhi project, so both codebases read the same way. The diagnosis only said the old names were confusing, not that these specific targets were required. |
 | 2026-11-12 | `@EnableFeignClients(basePackageClasses = PlatziStoreClient.class)` in `config/FeignConfig` | Off the main class, `@WebMvcTest` slices stop trying to build the Feign client, so the `@MockitoBean PlatziStoreClient` workaround from Phase 0 is gone. `basePackageClasses` is needed because the annotation's default scan root would now be `config`. |
+| 2026-11-12 | Renamed only the class (`Product` → `CartItem`); the field `Cart.products`, the JSON key `products` and `ProductRequest` keep their names | The field name is the Mongo field and the HTTP contract; changing it needs a migration and a contract change (Phase 4 territory). `ProductRequest` really does carry a catalog product id, so its name is not wrong. |
+| 2026-11-12 | Added two integration tests that look at the raw Mongo document | A class rename is only safe if Spring Data stores no class name for embedded items. That was an assumption; now it is asserted, together with reading a hand-written document in the old format. |
 
 ## Context & Orientation
 
@@ -62,8 +64,11 @@ Delivered as three stacked PRs:
 ## Validation & Acceptance
 
 - [x] PR 1: values in Redis are JSON (asserted by reading the key with `StringRedisTemplate`), each with a TTL; cache hits return the same payload as a miss
-- [ ] PR 2 and PR 3: pure moves/renames, every test green without assertion changes
+- [x] PR 2 and PR 3: pure moves/renames, every test green without assertion changes
+- [x] PR 3: a cart document written in the pre-rename format is read and paid through the API
 
 ## Outcomes & Retrospective
 
-**What shipped**: (fill in when the three PRs are merged)
+**What shipped**: A3 and A4. 97 tests. No HTTP contract change in any of the three PRs.
+**What we learned**: typed JSON serializers are the safe choice for caching records; always `clean` after moving classes.
+**What's left**: `controller/api/docs` could be renamed to `controller/api/spec` to match the Eletro Longhi API (not done: nobody asked and it is pure churn). Next is Phase 4 (HTTP semantics, error format, Swagger), which **does** change the contract.

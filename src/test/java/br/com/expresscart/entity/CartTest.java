@@ -15,11 +15,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CartTest {
 
-    private static Cart openCart(Product... items) {
+    private static Cart openCart(CartItem... items) {
         return Cart.open(CLIENT_ID, List.of(items));
     }
 
-    private static Cart soldCart(Product... items) {
+    private static Cart soldCart(CartItem... items) {
         Cart cart = openCart(items);
         cart.pay(PaymentMethod.PIX);
         return cart;
@@ -61,7 +61,7 @@ class CartTest {
 
         @Test
         void itemsAreCopiedAndCannotBeChangedFromOutside() {
-            List<Product> source = new ArrayList<>(List.of(cartItem(1L, "A", "10.00", 1)));
+            List<CartItem> source = new ArrayList<>(List.of(cartItem(1L, "A", "10.00", 1)));
             Cart cart = Cart.open(CLIENT_ID, source);
 
             source.add(cartItem(2L, "B", "99.00", 1));
@@ -83,7 +83,7 @@ class CartTest {
 
             cart.replaceItems(List.of(cartItem(2L, "Novo", "7.00", 3)));
 
-            assertThat(cart.getProducts()).extracting(Product::getId).containsExactly(2L);
+            assertThat(cart.getProducts()).extracting(CartItem::getId).containsExactly(2L);
             assertThat(cart.getTotalPrice()).isEqualByComparingTo("21.00");
             assertThat(cart.getStatus()).isEqualTo(Status.OPEN);
         }
@@ -173,7 +173,7 @@ class CartTest {
     }
 
     @Test
-    void productSubtotalIsPriceTimesQuantity() {
+    void itemSubtotalIsPriceTimesQuantity() {
         assertThat(cartItem(1L, "A", "10.50", 4).subtotal()).isEqualByComparingTo("42.00");
     }
 }

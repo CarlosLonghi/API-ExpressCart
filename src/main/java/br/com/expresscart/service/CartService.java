@@ -8,7 +8,7 @@ import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
 import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.entity.Cart;
-import br.com.expresscart.entity.Product;
+import br.com.expresscart.entity.CartItem;
 import br.com.expresscart.entity.Status;
 import br.com.expresscart.exception.BusinessException;
 import br.com.expresscart.exception.DataNotFoundException;
@@ -36,7 +36,7 @@ public class CartService {
                     );
                 });
 
-        Cart cart = Cart.open(cartRequest.clientId(), buildProductList(cartRequest.products()));
+        Cart cart = Cart.open(cartRequest.clientId(), buildItems(cartRequest.products()));
 
         return new CartResponse(cartRepository.save(cart));
     }
@@ -50,7 +50,7 @@ public class CartService {
 
         // Recusa carrinho vendido antes de consultar o catálogo
         cart.ensureItemsCanChange();
-        cart.replaceItems(buildProductList(cartRequest.products()));
+        cart.replaceItems(buildItems(cartRequest.products()));
 
         return new CartResponse(cartRepository.save(cart));
     }
@@ -71,11 +71,11 @@ public class CartService {
         return new CartResponse(cartRepository.save(cart));
     }
 
-    private List<Product> buildProductList(List<ProductRequest> productRequests) {
+    private List<CartItem> buildItems(List<ProductRequest> productRequests) {
         return productRequests.stream()
                 .map(productRequest -> {
                     ProductResponse productResponse = productService.getProductById(productRequest.id());
-                    return Product.builder()
+                    return CartItem.builder()
                             .id(productResponse.id())
                             .title(productResponse.title())
                             .price(productResponse.price())

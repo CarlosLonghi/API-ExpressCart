@@ -1,6 +1,6 @@
 package br.com.expresscart.controller.response;
 
-import br.com.expresscart.entity.Product;
+import br.com.expresscart.entity.CartItem;
 
 import java.math.BigDecimal;
 
@@ -11,12 +11,12 @@ public record CartItemResponse(
         Integer quantity
 ) {
 
-    public CartItemResponse(Product product) {
+    public CartItemResponse(CartItem item) {
         this(
-                product.getId(),
-                product.getTitle(),
-                product.getPrice(),
-                product.getQuantity()
+                item.getId(),
+                item.getTitle(),
+                item.getPrice(),
+                item.getQuantity()
         );
     }
 }
