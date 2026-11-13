@@ -123,6 +123,7 @@ stateDiagram-v2
 | R5 | O `PUT /cart/{id}` **substitui** a lista inteira de itens (não faz merge) | `Cart.replaceItems` | n/a |
 | R6 | Quantidade por item: 1 a 100 (na criação e na atualização) | `ProductRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 | R8 | Um produto só pode aparecer uma vez na lista de itens (na criação e na atualização) | `@UniqueProductIds` em `CartRequest` e `CartUpdateRequest` | 400 (lista de `ValidationErrorResponse`, campo `products`) |
+| R9 | Um carrinho é criado com ao menos um item. Esvaziar depois é permitido (`PUT` com lista vazia ou `/clear`) | `@NotEmpty` em `CartRequest` | 400 (lista de `ValidationErrorResponse`, campo `products`) |
 | R7 | Pagamento exige `paymentMethod` | `PaymentRequest` (Bean Validation) | 400 (lista de `ValidationErrorResponse`) |
 
 > A atualização usa `CartUpdateRequest`, que só tem `products`: o dono do carrinho não muda. Um `clientId` enviado no corpo é ignorado.

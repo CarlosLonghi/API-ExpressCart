@@ -80,9 +80,10 @@ class CartControllerTest {
     @Test
     void create_clientIdMustBePositive() throws Exception {
         mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
-                        {"clientId": 0, "products": []}
+                        {"clientId": 0, "products": [{"id": 1, "quantity": 1}]}
                         """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].field").value("clientId"))
                 .andExpect(jsonPath("$[0].message").value("O ID do cliente deve ser maior que 0"));
     }
@@ -96,6 +97,20 @@ class CartControllerTest {
                 .andExpect(jsonPath("$[0].field").value("products"))
                 .andExpect(jsonPath("$[0].message")
                         .value("Informe a lista de Produtos que deseja adicionar ao carrinho"));
+    }
+
+    @Test
+    void create_emptyProductsIsRejected() throws Exception {
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"clientId": 1, "products": []}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].field").value("products"))
+                .andExpect(jsonPath("$[0].message")
+                        .value("Informe a lista de Produtos que deseja adicionar ao carrinho"));
+
+        verifyNoInteractions(cartService);
     }
 
     @Test
@@ -208,6 +223,20 @@ class CartControllerTest {
                         "products[0].quantity", "products[1].id", "products[1].quantity")));
 
         verifyNoInteractions(cartService);
+    }
+
+    @Test
+    void update_emptyProductsIsAccepted() throws Exception {
+        // Esvaziar pelo PUT é permitido: equivale ao /clear
+        when(cartService.updateCart(eq(CART_ID), any())).thenReturn(new CartResponse(cart(Status.OPEN)));
+
+        mockMvc.perform(put(BASE + "/{id}", CART_ID).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"products": []}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.products").isEmpty());
+
+        verify(cartService).updateCart(CART_ID, cartUpdateRequest());
     }
 
     @Test

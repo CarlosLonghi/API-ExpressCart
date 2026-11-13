@@ -1,7 +1,7 @@
 # ExecPlan: Phase 2, domain behavior and own DTOs
 
 **Date**: 2026-11-12
-**Status**: Complete (pending merge of the two PRs)
+**Status**: Complete
 **Covers**: A1, A2, B8 leftovers (`docs/REFACTORING.md`)
 
 ## Goal
@@ -74,4 +74,4 @@ Pending a product decision (not in these PRs): duplicated product ids in a reque
 
 **What shipped**: A1 and A2. 86 tests, 99.4% instructions / 100% branches. No HTTP contract change in either PR.
 **What we learned**: with the Phase 0 suite in place, both refactors could be validated by leaving the HTTP-level tests untouched.
-**What's left**: B8 product decisions (duplicated ids in a request; whether a cart can be created empty). Renaming `entity.Product` to `CartItem` is a candidate for Phase 3.
+**What's left**: nothing from B8. Both product decisions were made on 2026-11-12 and shipped as follow-up PRs: a repeated product id is rejected with 400 (`fix/reject-duplicated-products`), and a cart must be created with at least one item while emptying it later stays allowed (`fix/require-items-on-create`). Renaming `entity.Product` to `CartItem` is a candidate for Phase 3.
