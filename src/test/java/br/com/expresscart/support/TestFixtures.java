@@ -9,7 +9,7 @@ import br.com.expresscart.controller.response.CategoryResponse;
 import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.entity.Cart;
 import br.com.expresscart.entity.PaymentMethod;
-import br.com.expresscart.entity.Product;
+import br.com.expresscart.entity.CartItem;
 import br.com.expresscart.entity.Status;
 
 import org.springframework.test.util.ReflectionTestUtils;
@@ -57,8 +57,8 @@ public final class TestFixtures {
         return new CartUpdateRequest(List.of(items));
     }
 
-    public static Product cartItem(Long id, String title, String price, Integer quantity) {
-        return Product.builder()
+    public static CartItem cartItem(Long id, String title, String price, Integer quantity) {
+        return CartItem.builder()
                 .id(id)
                 .title(title)
                 .price(new BigDecimal(price))
@@ -67,7 +67,7 @@ public final class TestFixtures {
     }
 
     /** Carrinho como viria do banco: com id e, se SOLD, já pago com PIX. */
-    public static Cart cart(Status status, Product... items) {
+    public static Cart cart(Status status, CartItem... items) {
         Cart cart = Cart.open(CLIENT_ID, List.of(items));
         ReflectionTestUtils.setField(cart, "id", CART_ID);
         if (status == Status.SOLD) {

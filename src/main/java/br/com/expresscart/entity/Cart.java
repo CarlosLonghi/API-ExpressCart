@@ -25,20 +25,21 @@ public class Cart {
 
     private BigDecimal totalPrice;
 
-    private List<Product> products;
+    // O campo se chama "products" no MongoDB e no JSON da API; renomear exigiria migrar os documentos
+    private List<CartItem> products;
 
     private Status status;
 
     private PaymentMethod paymentMethod;
 
-    private Cart(Long clientId, List<Product> products) {
+    private Cart(Long clientId, List<CartItem> products) {
         this.clientId = Objects.requireNonNull(clientId, "clientId");
         this.status = Status.OPEN;
         setItems(products);
     }
 
     /** Abre um carrinho novo para o cliente, já com os itens e o total calculado. */
-    public static Cart open(Long clientId, List<Product> products) {
+    public static Cart open(Long clientId, List<CartItem> products) {
         return new Cart(clientId, products);
     }
 
@@ -51,7 +52,7 @@ public class Cart {
     }
 
     /** Substitui todos os itens do carrinho. */
-    public void replaceItems(List<Product> products) {
+    public void replaceItems(List<CartItem> products) {
         ensureItemsCanChange();
         setItems(products);
     }
@@ -79,10 +80,10 @@ public class Cart {
         }
     }
 
-    private void setItems(List<Product> products) {
+    private void setItems(List<CartItem> products) {
         this.products = List.copyOf(products);
         this.totalPrice = this.products.stream()
-                .map(Product::subtotal)
+                .map(CartItem::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

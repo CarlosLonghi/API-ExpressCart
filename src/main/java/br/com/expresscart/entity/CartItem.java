@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  */
 @Getter
 @Builder
-public class Product {
+public class CartItem {
 
     private final Long id;
     private final String title;

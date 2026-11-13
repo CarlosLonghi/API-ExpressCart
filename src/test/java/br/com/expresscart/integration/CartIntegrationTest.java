@@ -5,9 +5,15 @@ import br.com.expresscart.entity.PaymentMethod;
 import br.com.expresscart.entity.Status;
 import br.com.expresscart.support.AbstractIntegrationTest;
 import com.jayway.jsonpath.JsonPath;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.util.List;
 
 import static br.com.expresscart.support.PlatziStubs.*;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
@@ -22,6 +28,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CartIntegrationTest extends AbstractIntegrationTest {
 
     private static final String BASE = "/api/v1/cart";
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     private ResultActions createCart(long clientId, String productsJson) throws Exception {
         return mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON)
@@ -209,6 +218,51 @@ class CartIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.products").isEmpty())
                 .andExpect(jsonPath("$.totalPrice").value(0))
                 .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    void storedDocumentKeepsItsFieldNames() throws Exception {
+        // Protege a compatibilidade com carrinhos já gravados: renomear classes não pode mudar o documento
+        stubProduct(1, "Camiseta", "10.50");
+        String id = createCartAndGetId(3, "[{\"id\": 1, \"quantity\": 2}]");
+
+        Document stored = mongoTemplate.getCollection("carts")
+                .find(new Document("_id", new ObjectId(id))).first();
+
+        assertThat(stored).isNotNull();
+        assertThat(stored.keySet())
+                .containsExactlyInAnyOrder("_id", "clientId", "totalPrice", "products", "status", "_class");
+        assertThat(stored.get("status")).isEqualTo("OPEN");
+
+        Document item = stored.getList("products", Document.class).get(0);
+        assertThat(item.keySet()).containsExactlyInAnyOrder("_id", "title", "price", "quantity");
+        assertThat(item.get("title")).isEqualTo("Camiseta");
+        assertThat(item.get("quantity")).isEqualTo(2);
+    }
+
+    @Test
+    void cartWrittenBeforeTheRenameIsStillReadable() throws Exception {
+        // Documento no formato gravado pelas versões anteriores (classe do item se chamava Product)
+        ObjectId id = new ObjectId();
+        mongoTemplate.getCollection("carts").insertOne(new Document("_id", id)
+                .append("clientId", 9L)
+                .append("totalPrice", "21.00")
+                .append("products", List.of(new Document("_id", 1L)
+                        .append("title", "Camiseta").append("price", "10.50").append("quantity", 2)))
+                .append("status", "OPEN")
+                .append("_class", "br.com.expresscart.entity.Cart"));
+
+        mockMvc.perform(get(BASE + "/{id}", id.toHexString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clientId").value(9))
+                .andExpect(jsonPath("$.totalPrice").value(21.0))
+                .andExpect(jsonPath("$.products[0].id").value(1))
+                .andExpect(jsonPath("$.products[0].quantity").value(2));
+
+        mockMvc.perform(put(BASE + "/{id}/payment", id.toHexString()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\": \"PIX\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SOLD"));
     }
 
     @Test
