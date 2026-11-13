@@ -15,10 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -86,20 +82,6 @@ class ProductServiceTest {
 
         assertThat(product.images()).isEmpty();
         assertThat(product.category()).isNull();
-    }
-
-    @Test
-    void returnedProductsAreSerializableForTheRedisCache() throws Exception {
-        when(platziStoreClient.getAllProducts()).thenReturn(List.of(platziProduct(1L, "A", "1.00")));
-        List<ProductResponse> products = productService.getAllProducts();
-
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
-            out.writeObject(products);
-        }
-        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
-            assertThat(in.readObject()).isEqualTo(products);
-        }
     }
 
     @Test

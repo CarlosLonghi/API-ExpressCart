@@ -1,12 +1,10 @@
 package br.com.expresscart.controller.response;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Produto do catálogo como esta API o expõe.
- * Serializable porque é o valor gravado no cache do Redis (serialização JDK).
+ * Produto do catálogo como esta API o expõe. Também é o valor gravado, em JSON, no cache do Redis.
  */
 public record ProductResponse(
         Long id,
@@ -14,5 +12,5 @@ public record ProductResponse(
         BigDecimal price,
         List<String> images,
         CategoryResponse category
-) implements Serializable {
+) {
 }
