@@ -33,8 +33,8 @@ The project is **being refactored** in phases. The diagnosis (bugs B1–B8, desi
 
 ## Domain model (summary)
 
-- **Cart** (`carts` collection): `id`, `clientId`, `products` (embedded, unmodifiable `Product` list), `totalPrice` (derived inside the entity), `status` (`OPEN` → `SOLD`), `paymentMethod` (`PIX`/`DEBIT`/`CREDIT`, null until paid).
-- **Product** (embedded, immutable): `id`, `title`, `price`, `quantity`, `subtotal()`. Title and price are a **snapshot** copied from Platzi when the item is added.
+- **Cart** (`carts` collection): `id`, `clientId`, `products` (embedded, unmodifiable `CartItem` list; the field keeps the name `products` because that is the Mongo field and the JSON key), `totalPrice` (derived inside the entity), `status` (`OPEN` → `SOLD`), `paymentMethod` (`PIX`/`DEBIT`/`CREDIT`, null until paid).
+- **CartItem** (embedded, immutable): `id`, `title`, `price`, `quantity`, `subtotal()`. Title and price are a **snapshot** copied from Platzi when the item is added.
 - One `OPEN` cart per `clientId` (checked in the service, no DB index, so there is a race, B7).
 - `PUT /cart/{id}` **replaces** the item list; it doesn't merge. Its body is `CartUpdateRequest` (items only), not `CartRequest`.
 

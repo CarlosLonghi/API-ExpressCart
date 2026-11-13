@@ -62,7 +62,7 @@ flowchart TD
 | `service` | Orquestração dos casos de uso do carrinho (`CartService`) e acesso ao catálogo com cache (`ProductService`). | `CartService`, `ProductService` |
 | `client` | Cliente Feign da API Platzi e os DTOs de resposta dela. Só o `ProductService` usa este pacote. | `PlatziStoreClient`, `PlatziProductResponse`, `PlatziCategoryResponse` |
 | `repository` | Acesso ao MongoDB. | `CartRepository` |
-| `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
+| `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `CartItem`, `Status`, `PaymentMethod` |
 | `exception` | Exceções de aplicação. | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
 | `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
 | `config` | Handler global de erros, configuração do cache, registro dos clientes Feign e metadados do OpenAPI. | `ApplicationControllerAdvice`, `CacheConfig`, `FeignConfig`, `OpenApiConfig` |
@@ -78,7 +78,7 @@ flowchart TD
 | `id` | `String` | ObjectId gerado pelo Mongo |
 | `clientId` | `Long` | Identificador do cliente (não é validado contra nenhum cadastro) |
 | `totalPrice` | `BigDecimal` | Calculado pela própria entidade a cada mudança de itens = Σ(`price` × `quantity`) |
-| `products` | `List<Product>` | Itens embutidos no documento |
+| `products` | `List<CartItem>` | Itens embutidos no documento. O campo mantém o nome `products` no MongoDB e no JSON |
 | `status` | `Status` | `OPEN` ou `SOLD` |
 | `paymentMethod` | `PaymentMethod` | `PIX`, `DEBIT` ou `CREDIT`; nulo até o pagamento (omitido no JSON quando nulo) |
 
@@ -91,7 +91,7 @@ A entidade não tem setters. Ela só muda por estes métodos, que aplicam as reg
 | `clear()` | Remove os itens e zera o total | carrinho `SOLD` |
 | `pay(método)` | Grava o método de pagamento e muda para `SOLD` | carrinho `SOLD` |
 
-### `Product`: item embutido no carrinho
+### `CartItem`: item embutido no carrinho
 
 `id`, `title`, `price`, `quantity`. O `title` e o `price` são **copiados da API externa no momento em que o item é adicionado** (é uma cópia do preço naquele instante). Se o preço mudar depois na Platzi, o carrinho não é atualizado até o próximo `PUT`.
 
