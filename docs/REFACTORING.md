@@ -63,11 +63,10 @@ Levantamento técnico do estado atual do código (branch `main`, após o PR #9 d
 - `ControllerAdvice` tem o mesmo nome da anotação do Spring, o que confunde. Sugestão: `GlobalExceptionHandler` em `exception/`.
 - `controller.request/response` → pode virar `dto.request/response` ou ficar por feature (`cart/`, `product/`).
 
-### 🟡 A4. Configuração de cache
-- `@EnableCaching` está em `ProductService`. Deveria ficar numa classe `@Configuration` (`CacheConfig`).
-- Não há `RedisCacheConfiguration`, então o cache usa **serialização Java** (por isso `ProductResponse` e `CategoryResponse` implementam `Serializable`). JSON (`GenericJackson2JsonRedisSerializer`) é mais legível e não quebra quando a classe muda.
-- O mesmo TTL (60s) vale para os caches `catalog-products` e `catalog-product`. Dá para configurar por cache.
-- `@Cacheable` em método que retorna `Optional` funciona (o Spring desembrulha o valor), mas soma com B1. Rever junto.
+### ✅ A4. Configuração de cache (corrigido)
+- **Era:** `@EnableCaching` ficava no `ProductService`, o cache usava serialização Java (bytes ilegíveis, que quebram quando a classe muda) e havia um TTL único para tudo.
+- **Correção:** `config/CacheConfig` concentra a configuração. Os valores são gravados em **JSON**, e cada cache tem o seu TTL (`expresscart.cache.product-ttl` e `product-list-ttl`, ambos 60 s por padrão).
+- **Diferente da sugestão original:** em vez do `GenericJackson2JsonRedisSerializer`, cada cache usa um serializador com o tipo fixo. O genérico não funciona bem com records, que voltam do cache como `Map`.
 
 ### 🟡 A5. HTTP / semântica REST
 - `PUT /cart/{id}/payment` e `PUT /cart/{id}/clear` são **ações**, não substituição de recurso. Alternativas: `POST /cart/{id}/payment` e `DELETE /cart/{id}/items`.

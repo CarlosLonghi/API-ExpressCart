@@ -3,6 +3,7 @@ package br.com.expresscart.service;
 import br.com.expresscart.client.PlatziStoreClient;
 import br.com.expresscart.client.response.PlatziCategoryResponse;
 import br.com.expresscart.client.response.PlatziProductResponse;
+import br.com.expresscart.config.CacheConfig;
 import br.com.expresscart.controller.response.CategoryResponse;
 import br.com.expresscart.controller.response.ProductResponse;
 import br.com.expresscart.exception.handler.DataNotFoundException;
@@ -11,7 +12,6 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,20 +22,14 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-@EnableCaching
 @Slf4j
 public class ProductService {
-
-    // Nomes novos desde que o valor em cache passou a ser ProductResponse:
-    // entradas antigas (PlatziProductResponse) nunca são lidas e expiram pelo TTL.
-    public static final String PRODUCT_LIST_CACHE = "catalog-products";
-    public static final String PRODUCT_CACHE = "catalog-product";
 
     private static final String PLATZI_UNAVAILABLE = "Erro ao consultar o catálogo de produtos (Platzi)";
 
     private final PlatziStoreClient platziStoreClient;
 
-    @Cacheable(PRODUCT_LIST_CACHE)
+    @Cacheable(CacheConfig.PRODUCT_LIST_CACHE)
     public List<ProductResponse> getAllProducts() {
         log.info("Buscando todos os produtos");
 
@@ -48,7 +42,7 @@ public class ProductService {
         }
     }
 
-    @Cacheable(value = PRODUCT_CACHE, key = "#id")
+    @Cacheable(value = CacheConfig.PRODUCT_CACHE, key = "#id")
     public ProductResponse getProductById(Long id) {
         log.info("Buscando produto com id={}", id);
 

@@ -65,7 +65,7 @@ flowchart TD
 | `entity` | Documento Mongo com as regras de estado do carrinho, e enums de domínio. | `Cart`, `Product`, `Status`, `PaymentMethod` |
 | `exception.handler` | Exceções de aplicação (o nome do pacote engana: aqui não há handlers). | `BusinessException`, `DataNotFoundException`, `ExternalServiceException` |
 | `exception.response` | Formatos de erro devolvidos ao cliente. | `GenericErrorResponse`, `ValidationErrorResponse` |
-| `config` | Handler global de erros e metadados do OpenAPI. | `ControllerAdvice`, `OpenApiConfig` |
+| `config` | Handler global de erros, configuração do cache e metadados do OpenAPI. | `ControllerAdvice`, `CacheConfig`, `OpenApiConfig` |
 
 ---
 
@@ -153,7 +153,7 @@ sequenceDiagram
     end
     loop para cada item
         CS->>PS: getProductById(id)
-        PS->>R: cache "catalog-product::{id}"
+        PS->>R: cache "catalog-product-v2::{id}"
         alt cache miss
             PS->>P: GET /products/{id}
             P-->>PS: produto (400 se não existir → 404)
@@ -169,7 +169,7 @@ sequenceDiagram
 
 ### Consultar produtos: `GET /api/v1/product` e `/api/v1/product/{id}`
 
-1. `ProductService` é `@Cacheable` (caches `catalog-products` e `catalog-product`, chave = `id`). O valor em cache é o `ProductResponse`, já convertido.
+1. `ProductService` é `@Cacheable` (caches `catalog-products-v2` e `catalog-product-v2`, chave = `id`). O valor em cache é o `ProductResponse`, já convertido e gravado em JSON.
 2. Em cache miss, chama `PlatziStoreClient` (Feign) na URL `expresscart.client.platzi`.
 3. O `ProductService` traduz os erros do Feign:
    - `400` (a Platzi responde 400 para ID inexistente) → `DataNotFoundException` → **404** com o id na mensagem.
@@ -247,7 +247,8 @@ Base: `http://localhost:8080`. Swagger UI: `/swagger-ui/index.html`. Spec OpenAP
 |---|---|---|
 | `spring.data.mongodb.host/port/database` | `localhost` / `27017` / `express-cart` | Conexão Mongo |
 | `spring.data.redis.host/port/password` | `localhost` / `6379` / `password` | Conexão Redis |
-| `spring.cache.redis.time-to-live` | `60000` (ms) | TTL do cache de produtos |
+| `expresscart.cache.product-ttl` | `60s` | TTL do cache de produto por id |
+| `expresscart.cache.product-list-ttl` | `60s` | TTL do cache da lista de produtos |
 | `spring.mvc.throw-exception-if-no-handler-found` + `spring.web.resources.add-mappings: false` | n/a | Faz rotas inexistentes caírem no `ControllerAdvice` (404 em JSON) |
 | `expresscart.client.platzi` | `https://api.escuelajs.co/api/v1` | URL base do Feign |
 

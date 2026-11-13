@@ -29,7 +29,7 @@ Only exists as `clientId` on the cart. "Client" also appears as the Feign **HTTP
 `https://api.escuelajs.co/api/v1` (`expresscart.client.platzi`). Public, rate-unknown, data may be reset by its maintainers. Returns **400** (not 404) for an unknown product id. Never call it from tests; use WireMock.
 
 ### Redis
-Cache only (`catalog-products`, `catalog-product::{id}`), TTL 60 s, JDK serialization of `ProductResponse`.
+Cache only (`catalog-products-v2`, `catalog-product-v2::{id}`), JSON values (`ProductResponse`), TTL per cache from `expresscart.cache.*` (60 s). Configured in `config/CacheConfig`.
 
 ### MongoDB
 Database `express-cart`, single collection `carts`.
@@ -53,7 +53,8 @@ Database `express-cart`, single collection `carts`.
 | Cart state rules | `entity/Cart.java` |
 | Cart use cases / one-open-cart rule | `service/CartService.java` |
 | Total price calculation | `entity/Cart.java#setItems`, `entity/Product.java#subtotal` |
-| Catalog + cache | `service/ProductService.java` |
+| Catalog | `service/ProductService.java` |
+| Cache names, serialization, TTL | `config/CacheConfig.java`, `application.yml` (`expresscart.cache.*`) |
 | Feign client / error mapping | `client/PlatziStoreClient.java`, `service/ProductService.java` |
 | Error → HTTP | `config/ControllerAdvice.java` |
 | Swagger docs per endpoint | `controller/api/docs/CartApi.java`, `ProductApi.java` |

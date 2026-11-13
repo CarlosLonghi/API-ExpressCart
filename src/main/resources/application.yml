@@ -19,10 +19,9 @@ spring:
       port: 6379
       password: password
 
-  cache:
-    redis:
-      time-to-live: 60000
-
 expresscart:
+  cache:
+    product-ttl: 60s
+    product-list-ttl: 60s
   client:
     platzi: https://api.escuelajs.co/api/v1
