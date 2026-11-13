@@ -1,13 +1,12 @@
 package br.com.expresscart.controller;
 
-import br.com.expresscart.client.PlatziStoreClient;
 import br.com.expresscart.controller.request.CartRequest;
 import br.com.expresscart.controller.response.CartResponse;
 import br.com.expresscart.controller.response.PaymentResponse;
 import br.com.expresscart.entity.PaymentMethod;
 import br.com.expresscart.entity.Status;
-import br.com.expresscart.exception.handler.BusinessException;
-import br.com.expresscart.exception.handler.DataNotFoundException;
+import br.com.expresscart.exception.BusinessException;
+import br.com.expresscart.exception.DataNotFoundException;
 import br.com.expresscart.service.CartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +35,6 @@ class CartControllerTest {
 
     @MockitoBean
     private CartService cartService;
-
-    // @EnableFeignClients fica na classe principal; o mock evita subir o Feign no slice
-    @MockitoBean
-    private PlatziStoreClient platziStoreClient;
 
     private static CartResponse openCartResponse() {
         return new CartResponse(cart(Status.OPEN, cartItem(1L, "Camiseta", "10.50", 2)));

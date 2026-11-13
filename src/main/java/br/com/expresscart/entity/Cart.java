@@ -1,6 +1,6 @@
 package br.com.expresscart.entity;
 
-import br.com.expresscart.exception.handler.BusinessException;
+import br.com.expresscart.exception.BusinessException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
